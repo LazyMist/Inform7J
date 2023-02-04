@@ -2,10 +2,7 @@ package net.inform7j.transpiler.language.impl.deferring;
 
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Predicate;
+import java.util.function.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -96,13 +93,21 @@ public class DeferringStory implements IStory {
 			enums.put(c, new HashMap<>());
 		}
 	}
-	private final TokenPattern kindNames = TokenPattern.quoteIgnoreCase("list of").loop().omittable()
-		.concat(new TokenPattern.Conjunction(
+	
+	private final TokenPattern singleKindNames = new TokenPattern.Conjunction(
 		new MappedCollection<>(
 			new CombinedCollection<>(kinds.keySet(), enums.get(IEnum.Category.KIND).keySet()),
 			TokenPattern::quoteIgnoreCase
 		)
-	));
+	);
+	private final TokenPattern pluralKindNames = new TokenPattern.Conjunction(
+		new MappedCollection<>(
+			new CombinedCollection<>(kinds.keySet(), enums.get(IEnum.Category.KIND).keySet()),
+			((UnaryOperator<TokenString>)TokenString::pluralize).andThen(TokenPattern::quoteIgnoreCase)
+		)
+	);
+	private final TokenPattern kindNames = TokenPattern.quoteIgnoreCase("list of").loop().omittable()
+		.concat(new TokenPattern.Conjunction(Set.of(singleKindNames, pluralKindNames)));
 	private final Map<TokenString,Map<TokenString,DeferringProperty>> properties = new HashMap<>();
 	{
 		addBuiltinProperty(new DeferringProperty(this, null, BaseKind.FIGURE, new TokenString("file"), BaseKind.TEXT));
@@ -112,6 +117,8 @@ public class DeferringStory implements IStory {
 				);
 		addBuiltinProperty(new DeferringProperty(this, null, BaseKind.ROOM, new TokenString("private"), BaseKind.TRUTH_STATE));
 		addBuiltinProperty(new DeferringProperty(this, null, BaseKind.ROOM, new TokenString("sleepsafe"), BaseKind.TRUTH_STATE));
+		addBuiltinProperty(new DeferringProperty(this, null, BaseKind.THING, new TokenString("printed name"), BaseKind.TEXT));
+		addBuiltinProperty(new DeferringProperty(this, null, BaseKind.THING, new TokenString("description"), BaseKind.TEXT));
 	}
 	public static final String PROPERTY_NAME_REPLACEMENT = "property_names";
 	private final TokenPattern propertyNames = new TokenPattern.Conjunction(new CombinedCollection<>(new MappedCollection<>(properties.values(), m -> new MappedCollection<>(m.keySet(), TokenPattern::quoteIgnoreCase))));
@@ -120,7 +127,13 @@ public class DeferringStory implements IStory {
 	public static final String PROPERTY_NAME_REPLACEMENT_KIND_CAPTURE = "kind_name";
 	private final TokenPattern kindPropertyNames = new TokenPattern.CaptureReplacement(PROPERTY_NAME_REPLACEMENT_KIND_CAPTURE, l -> new TokenPattern.Conjunction(
 			new MappedCollection<>(
-					properties.get(l).keySet(),
+					new CombinedCollection<>(
+						properties.getOrDefault(l, Collections.emptyMap()).keySet(),
+						Optional.ofNullable(enums.get(IEnum.Category.PROPERTY).get(l))
+							.map(IEnum::streamValues)
+							.map(Stream::toList)
+							.orElseGet(Collections::emptyList)
+					),
 					TokenPattern::quoteIgnoreCase
 					)
 			), false);
@@ -131,6 +144,7 @@ public class DeferringStory implements IStory {
 		addObject(new DeferringObject(this, null, new TokenString("story creation year"), BaseKind.NUMBER));
 		addObject(new DeferringObject(this, null, new TokenString("maximum score"), BaseKind.NUMBER));
 		addObject(new DeferringObject(this, null, new TokenString("flexiblestory"), BaseKind.FIGURE));
+		addObject(new DeferringObject(this, null, new TokenString("title_graphic"), BaseKind.FIGURE));
 	}
 	public static final String OBJECT_NAME_REPLACEMENT = "object_names";
 	private static final TokenString it_tokens = new TokenString(new Token(Token.Type.WORD, "it"));
@@ -140,12 +154,11 @@ public class DeferringStory implements IStory {
 	public static final String PROPERTY_NAME_REPLACEMENT_OBJECT_CAPTURE = "object_name";
 	private final TokenPattern objectPropertyNames = new TokenPattern.CaptureReplacement(PROPERTY_NAME_REPLACEMENT_OBJECT_CAPTURE, l -> {
 		DeferringObject obj = objects.get(l);
-		Stream<DeferringKind> kinds = Stream.iterate(Optional.of(obj.getType()),
+		Stream<DeferringKind> kinds = Stream.iterate(Optional.ofNullable(obj).map(DeferringObject::getType),
 				Optional::isPresent,
 				k -> k.flatMap(DeferringKind::superKind)
 				)
-				.filter(Optional::isPresent)
-				.map(Optional::get);
+				.map(Optional::orElseThrow);
 		List<TokenString> names = kinds.map(DeferringKind::name).map(properties::get).filter(Objects::nonNull).map(Map::keySet).flatMap(Set::stream).toList();
 		return new TokenPattern.Conjunction(new MappedList<>(names, TokenPattern::quoteIgnoreCase));
 	}, false);

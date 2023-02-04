@@ -28,7 +28,7 @@ public class DeferringEnum extends DeferringImpl implements IEnum {
 					/*Pattern.compile("The (?<name>.+?)s are (?<values>.+?)\\.\\s*+", Pattern.CASE_INSENSITIVE)*/,
 					DeferringEnum::Kind),
 			new Parser<>(
-					AN.concat(WORD_LOOP.capture(CAPTURE_NAME))
+					AN.concat(new TokenPattern.Replacement(DeferringStory.KIND_NAME_REPLACEMENT, false).capture(CAPTURE_NAME))
 					.concat(TokenPattern.quoteIgnoreCase("can be").orIgnoreCase("is either"))
 					.concat(WORD_LOOP.capture(CAPTURE_VALUES))
 					.concat(

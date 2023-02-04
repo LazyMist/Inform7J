@@ -1,30 +1,25 @@
 package net.inform7j;
 
-import java.io.IOException;
-import java.io.StringBufferInputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.logging.Level;
-import java.util.logging.LogManager;
-
-import javax.swing.JFileChooser;
-import javax.swing.filechooser.FileNameExtensionFilter;
-
 import lombok.extern.slf4j.Slf4j;
 import net.inform7j.transpiler.Intake;
 import net.inform7j.transpiler.IntakeReader;
 import net.inform7j.transpiler.Statistics;
 import org.slf4j.Logger;
 
+import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.HashSet;
+
 @Slf4j
 public class Main {
 	public enum ParseState {
 		CMD,
 		EXT_PATH,
-		LOG_SEVERITY;
+		LOG_SEVERITY
 	}
 
 	public static void main(String[] args) {
@@ -72,11 +67,7 @@ public class Main {
 				state = ParseState.CMD;
 				break;
 			case LOG_SEVERITY:
-				try {
-					LogManager.getLogManager().updateConfiguration(s0 -> ".level".equals(s0) ? (o, n) -> s : null);
-				} catch(IOException ex) {
-					log.error("", ex);
-				}
+				
 				state = ParseState.CMD;
 				break;
 			}
@@ -87,6 +78,7 @@ public class Main {
 			jfc.setFileFilter(new FileNameExtensionFilter("Inform 7", "ni", "i7x"));
 			if(jfc.showOpenDialog(null) != JFileChooser.APPROVE_OPTION) return;
 			src = jfc.getSelectedFile().toPath();
+			if(!Files.exists(src)) log.error("Selected file does not exist");
 		}
 		Intake in = new Intake(ext, src);
 		IntakeReader rdr = in.createReader(stopOnError);

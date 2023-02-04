@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.spi.LoggingEventBuilder;
 
-import java.io.PrintStream;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -20,7 +19,7 @@ public enum Statistics {
 	WARNINGS(Logger::atWarn),
 	INCOMPLETE_EOF_LINE(WARNINGS),
 	INCOMPLETE_LINES(WARNINGS),
-	ELEMENTS(Logger::atDebug),
+	ELEMENTS(Logger::atTrace),
 	KINDS(ELEMENTS),
 	OBJECTS(ELEMENTS),
 	PROPERTIES(ELEMENTS),
@@ -40,7 +39,7 @@ public enum Statistics {
 		this.logSeverity = severity;
 		this.parent = Optional.empty();
 	}
-	private Statistics(Statistics parent) {
+	Statistics(Statistics parent) {
 		this.logSeverity = parent.logSeverity;
 		this.parent = Optional.of(parent);
 	}

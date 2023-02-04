@@ -1,20 +1,19 @@
 package net.inform7j.tests;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-import java.util.List;
-import java.util.Optional;
-
-import net.inform7j.transpiler.tokenizer.TokenString;
-import org.junit.jupiter.api.Test;
-
 import net.inform7j.transpiler.language.impl.deferring.DeferringEnum;
 import net.inform7j.transpiler.tokenizer.Token;
 import net.inform7j.transpiler.tokenizer.TokenPattern;
 import net.inform7j.transpiler.tokenizer.TokenPattern.Result;
+import net.inform7j.transpiler.tokenizer.TokenString;
+import org.junit.jupiter.api.Test;
+
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EnumPatternTest {
-	static final String TEST1 = "A situation can be resolved or unresolved.", TEST2 = TEST1 + " A situation is usually unresolved.\n";
+	static final String TEST1 = "A situation can be resolved or unresolved.", TEST2 = TEST1 + "\nA situation is usually unresolved.";
 
 	@Test
 	void test() {

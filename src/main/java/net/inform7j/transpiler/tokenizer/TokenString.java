@@ -45,6 +45,14 @@ public final class TokenString implements Iterable<Token> {
 		if(idx<0 || idx>=tokens.length) throw new IndexOutOfBoundsException("requested token "+idx+" out of "+tokens.length+" tokens");
 		return tokens[idx];
 	}
+	public TokenString pluralize() {
+		Token fin = tokens[tokens.length-1];
+		if(fin.type() != Token.Type.WORD) return this;
+		fin = new Token(Token.Type.WORD, fin.content()+"s");
+		final Token[] arr = Arrays.copyOf(tokens, tokens.length);
+		arr[tokens.length-1] = fin;
+		return new TokenString(arr);
+	}
 	
 	public TokenString substring(int from, int to) {
 		return new TokenString(tokens, from, to);

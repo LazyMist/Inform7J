@@ -26,6 +26,7 @@ public interface IStory {
 		TEXT(new TokenString("text"), VALUE),
 		INDEXED_TEXT(new TokenString("indexed text"), TEXT),
 		SNIPPET(new TokenString("snippet"), TEXT),
+		RULEBOOK(new TokenString("rulebook"), null),
 		THING(new TokenString("thing"), null),
 		FIGURE(new TokenString("figure"), THING),
 		OBJECT(new TokenString("object"), THING),
