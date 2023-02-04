@@ -21,7 +21,7 @@ import java.util.stream.Stream;
 import net.inform7j.transpiler.tokenizer.Token.SourcedToken;
 
 public interface TokenPattern {
-	public static record Result(Map<String,List<TokenString>> captures, int matchLength) implements Comparable<Result> {
+	record Result(Map<String,List<TokenString>> captures, int matchLength) implements Comparable<Result> {
 		public static final Result EMPTY = new Result(0);
 
 		public Result(int matchLength) {
@@ -35,7 +35,7 @@ public interface TokenPattern {
 		}
 
 		public TokenString cap(String name) {
-			return capOpt(name).get();
+			return capOpt(name).orElseThrow();
 		}
 
 		public List<TokenString> capMulti(String name) {
@@ -76,129 +76,129 @@ public interface TokenPattern {
 		}
 	}
 
-	public Stream<Result> matches(TokenString string);
+	Stream<Result> matches(TokenString string);
 
-	public default Stream<Result> matchesWrapped(List<SourcedToken> src) {
+	default Stream<Result> matchesWrapped(List<SourcedToken> src) {
 		return matches(new TokenString(src.stream().map(SourcedToken::tok)));
 	}
 
-	public default TokenPattern loop(Comparator<Result> order) {
+	default TokenPattern loop(Comparator<Result> order) {
 		return new Loop(this, order);
 	}
 
-	public default TokenPattern loop(boolean min) {
+	default TokenPattern loop(boolean min) {
 		return loop(min ? Comparator.naturalOrder() : Comparator.reverseOrder());
 	}
 
-	public default TokenPattern loop() {
+	default TokenPattern loop() {
 		return loop(false);
 	}
 
-	public default TokenPattern omittable(Comparator<Result> order) {
+	default TokenPattern omittable(Comparator<Result> order) {
 		return new Omittable(this, order);
 	}
 
-	public default TokenPattern omittable(boolean min) {
+	default TokenPattern omittable(boolean min) {
 		return omittable(min ? Comparator.naturalOrder() : Comparator.reverseOrder());
 	}
 
-	public default TokenPattern omittable() {
+	default TokenPattern omittable() {
 		return omittable(false);
 	}
 
-	public default TokenPattern concat(TokenPattern p) {
+	default TokenPattern concat(TokenPattern p) {
 		return new Concat(List.of(this, p));
 	}
 
-	public default TokenPattern concatReplacement(String key) {
+	default TokenPattern concatReplacement(String key) {
 		return concat(new Replacement(key, false));
 	}
 
-	public default TokenPattern concatNoCapReplacement(String key) {
+	default TokenPattern concatNoCapReplacement(String key) {
 		return concat(new Replacement(key, true));
 	}
 
-	public default TokenPattern concat(String s) {
+	default TokenPattern concat(String s) {
 		return concat(quote(s));
 	}
-	public default TokenPattern concatIgnoreCase(String s) {
+	default TokenPattern concatIgnoreCase(String s) {
 		return concat(quoteIgnoreCase(s));
 	}
 
-	public default TokenPattern concatOptional(String s) {
+	default TokenPattern concatOptional(String s) {
 		return concat(quote(s).omittable());
 	}
-	public default TokenPattern concatOptionalIgnoreCase(String s) {
+	default TokenPattern concatOptionalIgnoreCase(String s) {
 		return concat(quoteIgnoreCase(s).omittable());
 	}
 
-	public default TokenPattern concatConjunction(Collection<? extends TokenPattern> patterns) {
+	default TokenPattern concatConjunction(Collection<? extends TokenPattern> patterns) {
 		return concat(new Conjunction(patterns));
 	}
 
-	public default TokenPattern or(TokenPattern p) {
+	default TokenPattern or(TokenPattern p) {
 		return new Conjunction(List.of(this, p));
 	}
 
-	public default TokenPattern or(String s) {
+	default TokenPattern or(String s) {
 		return or(quote(s));
 	}
 
-	public default TokenPattern orIgnoreCase(String s) {
+	default TokenPattern orIgnoreCase(String s) {
 		return or(quoteIgnoreCase(s));
 	}
 
-	public default TokenPattern capture(Collection<String> name) {
-		return new Capture(this, Collections.unmodifiableSet(new HashSet<>(name)));
+	default TokenPattern capture(Collection<String> name) {
+		return new Capture(this, Set.copyOf(name));
 	}
 
-	public default TokenPattern capture(String ...name) {
+	default TokenPattern capture(String ...name) {
 		return capture(Arrays.asList(name));
 	}
 
-	public default TokenPattern lookahead(boolean invert) {
+	default TokenPattern lookahead(boolean invert) {
 		return new Lookahead(this, invert);
 	}
 
-	public static TokenPattern quote(Stream<Token> tokens, BiPredicate<Token, Token> eq) {
+	static TokenPattern quote(Stream<Token> tokens, BiPredicate<Token, Token> eq) {
 		return new Concat(tokens.map(t -> (Predicate<Token>)(x -> eq.test(t, x))).map(Single::new).toList());
 	}
 
-	public static TokenPattern quote(Stream<Token> tokens) {
+	static TokenPattern quote(Stream<Token> tokens) {
 		return quote(tokens, Token::equals);
 	}
 
-	public static TokenPattern quoteIgnoreCase(Stream<Token> tokens) {
+	static TokenPattern quoteIgnoreCase(Stream<Token> tokens) {
 		return quote(tokens, Token::equalsIgnoreCase);
 	}
 
-	public static TokenPattern quote(TokenString tokens, BiPredicate<Token, Token> eq) {
+	static TokenPattern quote(TokenString tokens, BiPredicate<Token, Token> eq) {
 		return new Concat(tokens.stream().map(t -> new Single(x -> eq.test(t, x))).toList());
 	}
 
-	public static TokenPattern quote(TokenString tokens) {
+	static TokenPattern quote(TokenString tokens) {
 		return quote(tokens, Token::equals);
 	}
 
-	public static TokenPattern quoteIgnoreCase(TokenString tokens) {
+	static TokenPattern quoteIgnoreCase(TokenString tokens) {
 		return quote(tokens, Token::equalsIgnoreCase);
 	}
 
-	public static TokenPattern quote(String tokens) {
+	static TokenPattern quote(String tokens) {
 		return quote(Token.Generator.parseLiteral(tokens));
 	}
 
-	public static TokenPattern quoteIgnoreCase(String tokens) {
+	static TokenPattern quoteIgnoreCase(String tokens) {
 		return quoteIgnoreCase(Token.Generator.parseLiteral(tokens));
 	}
 
-	public TokenPattern clearCapture();
+	TokenPattern clearCapture();
 
-	public TokenPattern replace(Function<? super String,? extends TokenPattern> replacer);
+	TokenPattern replace(Function<? super String,? extends TokenPattern> replacer);
 	
-	public TokenPattern replaceCaptures(Result previous);
+	TokenPattern replaceCaptures(Result previous);
 
-	public default Stream<TokenString> splitAsStream(TokenString src) {
+	default Stream<TokenString> splitAsStream(TokenString src) {
 		Stream.Builder<TokenString> out = Stream.builder();
 		L:while(!src.isEmpty()) {
 			for(int i=0; i<src.length(); i++) {
@@ -216,7 +216,7 @@ public interface TokenPattern {
 		return out.build();
 	}
 
-	public static record Loop(TokenPattern pattern, Comparator<Result> order) implements TokenPattern {
+	record Loop(TokenPattern pattern, Comparator<Result> order) implements TokenPattern {
 		@Override
 		public Stream<Result> matches(TokenString src) {
 			List<Result> ret = new ArrayList<>();
@@ -259,7 +259,7 @@ public interface TokenPattern {
 		}
 	}
 
-	public static record Omittable(TokenPattern pattern, Comparator<Result> order) implements TokenPattern {
+	record Omittable(TokenPattern pattern, Comparator<Result> order) implements TokenPattern {
 		@Override
 		public Stream<Result> matches(TokenString src) {
 			return Stream.concat(pattern.matches(src), Stream.of(Result.EMPTY)).sorted(order);
@@ -298,7 +298,7 @@ public interface TokenPattern {
 		}
 	}
 
-	public static record Concat(List<? extends TokenPattern> patterns) implements TokenPattern {
+	record Concat(List<? extends TokenPattern> patterns) implements TokenPattern {
 		@Override
 		public Stream<Result> matches(TokenString src) {
 			Stream<Result> results = Stream.of(Result.EMPTY);
@@ -312,7 +312,8 @@ public interface TokenPattern {
 		@Override
 		public TokenPattern clearCapture() {
 			List<TokenPattern> n = patterns.stream().map(TokenPattern::clearCapture).toList();
-			Iterator<? extends TokenPattern> a = patterns.iterator(), b = n.iterator();
+			Iterator<? extends TokenPattern> a = patterns.iterator();
+			Iterator<? extends TokenPattern> b = n.iterator();
 			while(a.hasNext()) {
 				if(a.next() != b.next()) return new Concat(n);
 			}
@@ -330,7 +331,8 @@ public interface TokenPattern {
 		@Override
 		public TokenPattern replace(Function<? super String, ? extends TokenPattern> replacer) {
 			List<? extends TokenPattern> n = patterns.stream().map(p -> p.replace(replacer)).toList();
-			Iterator<? extends TokenPattern> a = patterns.iterator(), b = n.iterator();
+			Iterator<? extends TokenPattern> a = patterns.iterator();
+			Iterator<? extends TokenPattern> b = n.iterator();
 			while(a.hasNext() && b.hasNext()) {
 				if(a.next() != b.next()) return new Concat(n);
 			}
@@ -341,7 +343,8 @@ public interface TokenPattern {
 		@Override
 		public TokenPattern replaceCaptures(Result previous) {
 			List<? extends TokenPattern> n = patterns.stream().map(p -> p.replaceCaptures(previous)).toList();
-			Iterator<? extends TokenPattern> a = patterns.iterator(), b = n.iterator();
+			Iterator<? extends TokenPattern> a = patterns.iterator();
+			Iterator<? extends TokenPattern> b = n.iterator();
 			while(a.hasNext() && b.hasNext()) {
 				if(a.next() != b.next()) return new Concat(n);
 			}
@@ -350,7 +353,7 @@ public interface TokenPattern {
 		}
 	}
 
-	public static record Conjunction(Collection<? extends TokenPattern> patterns) implements TokenPattern {
+	record Conjunction(Collection<? extends TokenPattern> patterns) implements TokenPattern {
 		@Override
 		public Stream<Result> matches(TokenString src) {
 			return patterns.stream().flatMap(p -> p.matches(src));
@@ -359,7 +362,8 @@ public interface TokenPattern {
 		@Override
 		public TokenPattern clearCapture() {
 			List<TokenPattern> n = patterns.stream().map(TokenPattern::clearCapture).toList();
-			Iterator<? extends TokenPattern> a = patterns.iterator(), b = n.iterator();
+			Iterator<? extends TokenPattern> a = patterns.iterator();
+			Iterator<? extends TokenPattern> b = n.iterator();
 			while(a.hasNext()) {
 				if(a.next() != b.next()) return new Conjunction(n);
 			}
@@ -377,7 +381,8 @@ public interface TokenPattern {
 		@Override
 		public TokenPattern replace(Function<? super String, ? extends TokenPattern> replacer) {
 			List<? extends TokenPattern> n = patterns.stream().map(p -> p.replace(replacer)).toList();
-			Iterator<? extends TokenPattern> a = patterns.iterator(), b = n.iterator();
+			Iterator<? extends TokenPattern> a = patterns.iterator();
+			Iterator<? extends TokenPattern> b = n.iterator();
 			while(a.hasNext() && b.hasNext()) {
 				if(a.next() != b.next()) return new Conjunction(n);
 			}
@@ -388,7 +393,8 @@ public interface TokenPattern {
 		@Override
 		public TokenPattern replaceCaptures(Result previous) {
 			List<? extends TokenPattern> n = patterns.stream().map(p -> p.replaceCaptures(previous)).toList();
-			Iterator<? extends TokenPattern> a = patterns.iterator(), b = n.iterator();
+			Iterator<? extends TokenPattern> a = patterns.iterator();
+			Iterator<? extends TokenPattern> b = n.iterator();
 			while(a.hasNext() && b.hasNext()) {
 				if(a.next() != b.next()) return new Conjunction(n);
 			}
@@ -397,7 +403,7 @@ public interface TokenPattern {
 		}
 	}
 
-	public static record Single(Predicate<? super Token> pred) implements TokenPattern {
+	record Single(Predicate<? super Token> pred) implements TokenPattern {
 		public static final Single STRING = new Single(r -> r.type() == Token.Type.STRING),
 				TAB = new Single(r -> r.type() == Token.Type.TAB),
 				WORD = new Single(r -> r.type() == Token.Type.WORD),
@@ -424,7 +430,7 @@ public interface TokenPattern {
 		}
 	}
 
-	public static record Capture(TokenPattern pattern, Set<String> name) implements TokenPattern {
+	record Capture(TokenPattern pattern, Set<String> name) implements TokenPattern {
 		@Override
 		public Stream<Result> matches(TokenString src) {
 			return pattern.matches(src).map(r -> r.mergeCapture(name, src.substring(0,r.matchLength)));
@@ -457,7 +463,7 @@ public interface TokenPattern {
 		}
 	}
 
-	public static record Lookahead(TokenPattern pattern, boolean invert) implements TokenPattern {
+	record Lookahead(TokenPattern pattern, boolean invert) implements TokenPattern {
 		@Override
 		public Stream<Result> matches(TokenString src) {
 			if(pattern.matches(src).findAny().isPresent() != invert) return Stream.of(Result.EMPTY);
@@ -492,7 +498,7 @@ public interface TokenPattern {
 		}
 	}
 
-	public static record Replacement(String name, boolean cc) implements TokenPattern {
+	record Replacement(String name, boolean cc) implements TokenPattern {
 		@Override
 		public Stream<Result> matches(TokenString src) {
 			throw new IllegalStateException("Trying to evaluate unreplaced replacement pattern: "+name);
@@ -518,7 +524,7 @@ public interface TokenPattern {
 		}
 	}
 
-	public static record CaptureReplacement(String capture, Function<? super TokenString, ? extends TokenPattern> replace, boolean cc) implements TokenPattern {
+	record CaptureReplacement(String capture, Function<? super TokenString, ? extends TokenPattern> replace, boolean cc) implements TokenPattern {
 		@Override
 		public Stream<Result> matches(TokenString src) {
 			throw new IllegalStateException("Trying to evaluate unreplaced capture replacement pattern: "+capture);
@@ -543,7 +549,7 @@ public interface TokenPattern {
 		}
 	}
 	
-	public static final TokenPattern END = new TokenPattern() {
+	TokenPattern END = new TokenPattern() {
 		@Override
 		public Stream<Result> matches(TokenString src) {
 			if(src.isEmpty()) return Stream.of(Result.EMPTY);

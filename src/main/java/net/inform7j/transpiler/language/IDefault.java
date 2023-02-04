@@ -6,7 +6,7 @@ import net.inform7j.transpiler.language.IStory.Element;
 import net.inform7j.transpiler.tokenizer.TokenString;
 
 public interface IDefault extends Element {
-	public Optional<? extends IProperty> property();
-	public Optional<? extends IObject> object();
-	public TokenString value();
+	Optional<? extends IProperty> property();
+	Optional<? extends IObject> object();
+	TokenString value();
 }

@@ -6,34 +6,35 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import net.inform7j.Logging;
-import net.inform7j.Logging.Severity;
+import lombok.extern.slf4j.Slf4j;
 import net.inform7j.transpiler.Source;
-import net.inform7j.transpiler.Intake.IntakeReader;
+import net.inform7j.transpiler.IntakeReader;
 import net.inform7j.transpiler.language.IStatement;
-import net.inform7j.transpiler.language.IStatement.StatementSupplier;
+import net.inform7j.transpiler.util.StatementSupplier;
 import net.inform7j.transpiler.tokenizer.TokenPattern;
 import net.inform7j.transpiler.tokenizer.TokenPredicate;
 
+@Slf4j
 public class DeferringPrint extends DeferringRoutine {
+	private static final TokenPattern TO_SAY = TokenPattern.quoteIgnoreCase("to say");
 	@SuppressWarnings("hiding")
 	public static final List<Parser<DeferringPrint>> PARSERS = Collections.unmodifiableList(Arrays.asList(
 			new Parser<>(
-					TokenPattern.quoteIgnoreCase("to say")
+				TO_SAY
 					.concat(PARAM_GLOB.loop())
 					.concat(":\n")
 					/*Pattern.compile("^to say (?<nameParams>"+DeferringFunction.PARAM_GLOB+"+):\\s*$", Pattern.CASE_INSENSITIVE)*/,
 					DeferringPrint::new
 					),
 			new Parser<>(
-					TokenPattern.quoteIgnoreCase("to say")
+				TO_SAY
 					.concat(PARAM_GLOB.loop())
 					.concat(":(-\n")
 					/*Pattern.compile("^to say (?<nameParams>"+DeferringFunction.PARAM_GLOB+"+): \\(-\\s*$", Pattern.CASE_INSENSITIVE)*/,
 					DeferringPrint::Raw
 					),
 			new Parser<>(
-					TokenPattern.quoteIgnoreCase("to say")
+				TO_SAY
 					.concat(PARAM_GLOB.loop())
 					.concat(":(-")
 					.concat(new TokenPattern.Single(TokenPredicate.NEWLINE.negate()).loop())
@@ -59,7 +60,11 @@ public class DeferringPrint extends DeferringRoutine {
 		StatementSupplier sup = ctx.supplier();
 		while(true) {
 			Optional<? extends IStatement> opt = sup.getNextOptional(IStatement.class);
-			if(Logging.log_assert(opt.isPresent(), Severity.FATAL, "Unclosed Raw block starting in: %s@%d", ctx.source().src(), ctx.source().line())) if(IntakeReader.tailMatch(opt.get(), IntakeReader.RAW_END, true)) break;
+			if(opt.isPresent()) {
+				if (IntakeReader.tailMatch(opt.get(), IntakeReader.RAW_END, true)) break;
+			} else {
+				log.error("Unclosed Raw block starting in: {}@{}", ctx.source().src(), ctx.source().line());
+			}
 		}
 		return RawClosed(ctx);
 	}

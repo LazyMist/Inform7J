@@ -12,7 +12,8 @@ import net.inform7j.transpiler.tokenizer.TokenPattern;
 import net.inform7j.transpiler.tokenizer.TokenString;
 
 public class DeferringEnum extends DeferringImpl implements IEnum {
-	public static final String CAPTURE_NAME = "name", CAPTURE_VALUES = "values";
+	public static final String CAPTURE_NAME = "name";
+	public static final String CAPTURE_VALUES = "values";
 	public static final List<Parser<DeferringEnum>> PARSERS = Collections.unmodifiableList(Arrays.asList(
 			new Parser<>(
 					TokenPattern.quoteIgnoreCase("the")

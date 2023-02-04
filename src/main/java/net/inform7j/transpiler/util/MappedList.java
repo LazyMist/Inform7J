@@ -1,11 +1,7 @@
 package net.inform7j.transpiler.util;
 
 import java.lang.reflect.Array;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Spliterator;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
@@ -32,7 +28,7 @@ public record MappedList<K, V> (List<? extends K> backing, Function<? super K,? 
 
 	@Override
 	public boolean contains(Object arg0) {
-		return backing.stream().map(mapping).anyMatch(arg0 == null ? s->s==null : arg0::equals);
+		return backing.stream().map(mapping).anyMatch(arg0 == null ? Objects::isNull : arg0::equals);
 	}
 
 	@Override
@@ -123,7 +119,7 @@ public record MappedList<K, V> (List<? extends K> backing, Function<? super K,? 
 
 	@Override
 	public int indexOf(Object arg0) {
-		return (int)stream().takeWhile(arg0 == null ? s -> s!=null : s -> !arg0.equals(s)).count();
+		return (int)stream().takeWhile(arg0 == null ? Objects::nonNull : s -> !arg0.equals(s)).count();
 	}
 
 	@Override

@@ -1,16 +1,7 @@
 package net.inform7j.transpiler.language.impl.deferring;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.NoSuchElementException;
-import java.util.Optional;
-import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -18,19 +9,10 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import net.inform7j.Logging;
-import net.inform7j.Logging.Severity;
+import lombok.extern.slf4j.Slf4j;
 import net.inform7j.transpiler.Statistics;
-import net.inform7j.transpiler.language.IAction;
-import net.inform7j.transpiler.language.IAlias;
-import net.inform7j.transpiler.language.IEnum;
-import net.inform7j.transpiler.language.IFunction;
-import net.inform7j.transpiler.language.IFunction.SignatureElement;
-import net.inform7j.transpiler.language.IKind;
-import net.inform7j.transpiler.language.IObject;
-import net.inform7j.transpiler.language.IProperty;
-import net.inform7j.transpiler.language.IStatement;
-import net.inform7j.transpiler.language.IStatement.StatementSupplier;
+import net.inform7j.transpiler.language.*;
+import net.inform7j.transpiler.util.StatementSupplier;
 import net.inform7j.transpiler.language.IStory;
 import net.inform7j.transpiler.language.ITable;
 import net.inform7j.transpiler.language.impl.deferring.DeferringImpl.ParseContext;
@@ -50,8 +32,9 @@ import net.inform7j.transpiler.util.LazyLookup;
 import net.inform7j.transpiler.util.MappedCollection;
 import net.inform7j.transpiler.util.MappedList;
 
+@Slf4j
 public class DeferringStory implements IStory {
-	public static record CombinedParser<T extends DeferringImpl>(
+	public record CombinedParser<T extends DeferringImpl>(
 			Parser<T> parser,
 			BiFunction<? super DeferringStory,? super TokenPattern,? extends TokenPattern> patMap,
 			BiConsumer<? super DeferringStory,? super T> consumer
@@ -95,9 +78,9 @@ public class DeferringStory implements IStory {
 		CPARSERS = Collections.unmodifiableCollection(l);
 	}
 
-	private Map<TokenString,DeferringKind> kinds = new HashMap<>();
+	private final Map<TokenString,DeferringKind> kinds = new HashMap<>();
 	public static final String KIND_NAME_REPLACEMENT = "kind_names";
-	private EnumMap<BaseKind,DeferringKind> basekinds = new EnumMap<>(BaseKind.class);
+	private final EnumMap<BaseKind,DeferringKind> basekinds = new EnumMap<>(BaseKind.class);
 	{
 		for(BaseKind b:BaseKind.values()) {
 			DeferringKind d = new DeferringKind(this, null, b.writtenName, b.parentKind == null ? Optional.empty() : Optional.of(basekinds.get(b.parentKind))); 
@@ -107,14 +90,20 @@ public class DeferringStory implements IStory {
 		}
 
 	}
-	private EnumMap<IEnum.Category,Map<TokenString,DeferringEnum>> enums = new EnumMap<>(IEnum.Category.class);
+	private final EnumMap<IEnum.Category,Map<TokenString,DeferringEnum>> enums = new EnumMap<>(IEnum.Category.class);
 	{
 		for(IEnum.Category c:IEnum.Category.values()) {
 			enums.put(c, new HashMap<>());
 		}
 	}
-	private TokenPattern kindNames = TokenPattern.quoteIgnoreCase("list of").loop().omittable().concat(new TokenPattern.Conjunction(new MappedCollection<TokenString,TokenPattern>(new CombinedCollection<>(kinds.keySet(),enums.get(IEnum.Category.KIND).keySet()), TokenPattern::quoteIgnoreCase)));
-	private Map<TokenString,Map<TokenString,DeferringProperty>> properties = new HashMap<>();
+	private final TokenPattern kindNames = TokenPattern.quoteIgnoreCase("list of").loop().omittable()
+		.concat(new TokenPattern.Conjunction(
+		new MappedCollection<>(
+			new CombinedCollection<>(kinds.keySet(), enums.get(IEnum.Category.KIND).keySet()),
+			TokenPattern::quoteIgnoreCase
+		)
+	));
+	private final Map<TokenString,Map<TokenString,DeferringProperty>> properties = new HashMap<>();
 	{
 		addBuiltinProperty(new DeferringProperty(this, null, BaseKind.FIGURE, new TokenString("file"), BaseKind.TEXT));
 		addBuiltinProperty(
@@ -125,20 +114,18 @@ public class DeferringStory implements IStory {
 		addBuiltinProperty(new DeferringProperty(this, null, BaseKind.ROOM, new TokenString("sleepsafe"), BaseKind.TRUTH_STATE));
 	}
 	public static final String PROPERTY_NAME_REPLACEMENT = "property_names";
-	private TokenPattern propertyNames = new TokenPattern.Conjunction(new CombinedCollection<>(new MappedCollection<>(properties.values(), m -> new MappedCollection<>(m.keySet(), TokenPattern::quoteIgnoreCase))));
+	private final TokenPattern propertyNames = new TokenPattern.Conjunction(new CombinedCollection<>(new MappedCollection<>(properties.values(), m -> new MappedCollection<>(m.keySet(), TokenPattern::quoteIgnoreCase))));
 	
 	public static final String KIND_PROPERTY_NAME_REPLACEMENT = "kind_property_names";
 	public static final String PROPERTY_NAME_REPLACEMENT_KIND_CAPTURE = "kind_name";
-	private TokenPattern kindPropertyNames = new TokenPattern.CaptureReplacement(PROPERTY_NAME_REPLACEMENT_KIND_CAPTURE, l -> {
-		return new TokenPattern.Conjunction(
-				new MappedCollection<TokenString,TokenPattern>(
-						properties.get(l).keySet(),
-						TokenPattern::quoteIgnoreCase
-						)
-				);
-	}, false);
+	private final TokenPattern kindPropertyNames = new TokenPattern.CaptureReplacement(PROPERTY_NAME_REPLACEMENT_KIND_CAPTURE, l -> new TokenPattern.Conjunction(
+			new MappedCollection<>(
+					properties.get(l).keySet(),
+					TokenPattern::quoteIgnoreCase
+					)
+			), false);
 	
-	private Map<TokenString,DeferringObject> objects = new HashMap<>();
+	private final Map<TokenString,DeferringObject> objects = new HashMap<>();
 	{
 		addObject(new DeferringObject(this, null, new TokenString("release number"), BaseKind.NUMBER));
 		addObject(new DeferringObject(this, null, new TokenString("story creation year"), BaseKind.NUMBER));
@@ -147,11 +134,11 @@ public class DeferringStory implements IStory {
 	}
 	public static final String OBJECT_NAME_REPLACEMENT = "object_names";
 	private static final TokenString it_tokens = new TokenString(new Token(Token.Type.WORD, "it"));
-	private TokenPattern objectNames = new TokenPattern.Conjunction(new MappedCollection<>(objects.keySet(), TokenPattern::quoteIgnoreCase));
+	private final TokenPattern objectNames = new TokenPattern.Conjunction(new MappedCollection<>(objects.keySet(), TokenPattern::quoteIgnoreCase));
 	
 	public static final String OBJECT_PROPERTY_NAME_REPLACEMENT = "object_property_names";
 	public static final String PROPERTY_NAME_REPLACEMENT_OBJECT_CAPTURE = "object_name";
-	private TokenPattern objectPropertyNames = new TokenPattern.CaptureReplacement(PROPERTY_NAME_REPLACEMENT_OBJECT_CAPTURE, l -> {
+	private final TokenPattern objectPropertyNames = new TokenPattern.CaptureReplacement(PROPERTY_NAME_REPLACEMENT_OBJECT_CAPTURE, l -> {
 		DeferringObject obj = objects.get(l);
 		Stream<DeferringKind> kinds = Stream.iterate(Optional.of(obj.getType()),
 				Optional::isPresent,
@@ -159,44 +146,36 @@ public class DeferringStory implements IStory {
 				)
 				.filter(Optional::isPresent)
 				.map(Optional::get);
-		List<TokenString> names = kinds.map(DeferringKind::name).map(properties::get).filter(s -> s!=null).map(Map::keySet).flatMap(Set::stream).toList();
+		List<TokenString> names = kinds.map(DeferringKind::name).map(properties::get).filter(Objects::nonNull).map(Map::keySet).flatMap(Set::stream).toList();
 		return new TokenPattern.Conjunction(new MappedList<>(names, TokenPattern::quoteIgnoreCase));
 	}, false);
 	
-	private Map<String,DeferringFunction> functions = new HashMap<>();
-	private Map<TokenString,Map<TokenString,DeferringValue>> values = new HashMap<>();
-	private Map<TokenString,DeferringValue> freeValues = new HashMap<>();
-	private Map<TokenString,DeferringDefault> defaults = new HashMap<>();
-	private Map<TokenString,Map<TokenString,DeferringDefault>> pdefaults = new HashMap<>();
-	private Map<TokenString,DeferringAction> actions = new HashMap<>();
+	private final Map<String,DeferringFunction> functions = new HashMap<>();
+	private final Map<TokenString,Map<TokenString,DeferringValue>> values = new HashMap<>();
+	private final Map<TokenString,DeferringValue> freeValues = new HashMap<>();
+	private final Map<TokenString,DeferringDefault> defaults = new HashMap<>();
+	private final Map<TokenString,Map<TokenString,DeferringDefault>> pdefaults = new HashMap<>();
+	private final Map<TokenString,DeferringAction> actions = new HashMap<>();
 	public static final String ACTION_NAME_REPLACEMENT = "action_names";
-	private TokenPattern actionNames = new TokenPattern.Conjunction(new MappedCollection<>(actions.keySet(), TokenPattern::quoteIgnoreCase));
-	private Map<TokenString,DeferringTable> tableNames = new HashMap<>();
-	private Map<TokenString,DeferringTable> tableNumbers = new HashMap<>();
-	private Map<TokenString,List<DeferringContinuation>> continuedNames = new HashMap<>();
-	private Map<TokenString,List<DeferringContinuation>> continuedNumbers = new HashMap<>();
-	private List<DeferringAlias> aliases = new LinkedList<>();
-	private Map<TokenString,List<DeferringActionRule>> actionRules = new HashMap<>();
-	private Map<TokenString,DeferringRule> namedRules = new HashMap<>();
-	private Map<ISimpleRule.SimpleTrigger,List<DeferringSimpleRule>> simpleRules = new HashMap<>();
+	private final TokenPattern actionNames = new TokenPattern.Conjunction(new MappedCollection<>(actions.keySet(), TokenPattern::quoteIgnoreCase));
+	private final Map<TokenString,DeferringTable> tableNames = new HashMap<>();
+	private final Map<TokenString,DeferringTable> tableNumbers = new HashMap<>();
+	private final Map<TokenString,List<DeferringContinuation>> continuedNames = new HashMap<>();
+	private final Map<TokenString,List<DeferringContinuation>> continuedNumbers = new HashMap<>();
+	private final List<DeferringAlias> aliases = new LinkedList<>();
+	private final Map<TokenString,List<DeferringActionRule>> actionRules = new HashMap<>();
+	private final Map<TokenString,DeferringRule> namedRules = new HashMap<>();
+	private final Map<ISimpleRule.SimpleTrigger,List<DeferringSimpleRule>> simpleRules = new EnumMap<>(ISimpleRule.SimpleTrigger.class);
 	
 	private TokenPattern replace(TokenPattern pat) {
-		return pat.replace(s -> {
-			switch(s) {
-			case KIND_NAME_REPLACEMENT:
-				return kindNames;
-			case ACTION_NAME_REPLACEMENT:
-				return actionNames;
-			case OBJECT_NAME_REPLACEMENT:
-				return objectNames;
-			case PROPERTY_NAME_REPLACEMENT:
-				return propertyNames;
-			case KIND_PROPERTY_NAME_REPLACEMENT:
-				return kindPropertyNames;
-			case OBJECT_PROPERTY_NAME_REPLACEMENT:
-				return objectPropertyNames;
-			}
-			throw new NoSuchElementException("Unknown replacement: "+s);
+		return pat.replace(s -> switch (s) {
+			case KIND_NAME_REPLACEMENT -> kindNames;
+			case ACTION_NAME_REPLACEMENT -> actionNames;
+			case OBJECT_NAME_REPLACEMENT -> objectNames;
+			case PROPERTY_NAME_REPLACEMENT -> propertyNames;
+			case KIND_PROPERTY_NAME_REPLACEMENT -> kindPropertyNames;
+			case OBJECT_PROPERTY_NAME_REPLACEMENT -> objectPropertyNames;
+			default -> throw new NoSuchElementException("Unknown replacement: " + s);
 		});
 	}
 
@@ -221,7 +200,7 @@ public class DeferringStory implements IStory {
 	}
 
 	public boolean addKind(DeferringKind kind) {
-		Logging.log(Statistics.KINDS, "Adding kind %s", kind.NAME);
+		Statistics.KINDS.prepareLog(log).log("Adding kind {}", kind.NAME);
 		return kinds.putIfAbsent(kind.NAME, kind) != null;
 	}
 
@@ -244,13 +223,13 @@ public class DeferringStory implements IStory {
 		Map<TokenString,DeferringEnum> en = enums.get(e.category());
 		switch(e.category()) {
 		case KIND:
-			Logging.log(Statistics.KINDS, "Adding enum kind %s [ %s ]", e.name(), e.streamValues().map(TokenString::toString).collect(Collectors.joining(", ")));
+			Statistics.KINDS.prepareLog(log).log("Adding enum kind {} [ {} ]", e.name(), e.streamValues().map(TokenString::toString).collect(Collectors.joining(", ")));
 			break;
 		case OBJECT:
-			Logging.log(Statistics.OBJECTS, "Adding enum variable %s [ %s ]", e.name(), e.streamValues().map(TokenString::toString).collect(Collectors.joining(", ")));
+			Statistics.OBJECTS.prepareLog(log).log("Adding enum variable {} [ {} ]", e.name(), e.streamValues().map(TokenString::toString).collect(Collectors.joining(", ")));
 			break;
 		case PROPERTY:
-			Logging.log(Statistics.PROPERTIES, "Adding enum property %s [ %s ]", e.name(), e.streamValues().map(TokenString::toString).collect(Collectors.joining(", ")));
+			Statistics.PROPERTIES.prepareLog(log).log("Adding enum property {} [ {} ]", e.name(), e.streamValues().map(TokenString::toString).collect(Collectors.joining(", ")));
 			break;
 		}
 		return en.putIfAbsent(e.name(), e) != null;
@@ -273,11 +252,10 @@ public class DeferringStory implements IStory {
 	}
 
 	public boolean addProperty(DeferringProperty property) {
-		Logging.log(Statistics.PROPERTIES, "Adding property %s of %s of type %s", property.NAME, property.OWNER, property.TYPE);
+		Statistics.PROPERTIES.prepareLog(log).log("Adding property {} of {} of type {}", property.NAME, property.OWNER, property.TYPE);
 		return properties.computeIfAbsent(property.OWNER, s -> new HashMap<>()).putIfAbsent(property.NAME, property) != null;
 	}
 	
-	@SafeVarargs
 	private boolean addBuiltinProperty(DeferringProperty property, TokenString ...aliases) {
 		Map<TokenString, DeferringProperty> props = properties.computeIfAbsent(property.OWNER, s -> new HashMap<>());
 		for(TokenString a:aliases) {
@@ -297,21 +275,21 @@ public class DeferringStory implements IStory {
 	}
 
 	public boolean addObject(DeferringObject object) {
-		Logging.log(Statistics.OBJECTS, "Adding object %s of type %s", object.NAME, object.TYPE.key());
+		Statistics.OBJECTS.prepareLog(log).log("Adding object {} of type {}", object.NAME, object.TYPE.key());
 		boolean ret = objects.putIfAbsent(object.NAME, object) != null;
 		if(!ret) objects.put(it_tokens, object);
 		return ret;
 	}
 
 	@Override
-	public DeferringFunction getFunction(IKind returnType, Stream<? extends SignatureElement> name) {
+	public DeferringFunction getFunction(IKind returnType, Stream<? extends IFunction.SignatureElement> name) {
 		DeferringFunction ret = getFunction(name);
 		if(ret != null && !ret.returnType().canAssignTo(returnType)) ret = null;
 		return ret;
 	}
 	
 	@Override
-	public DeferringFunction getFunction(Stream<? extends SignatureElement> name) {
+	public DeferringFunction getFunction(Stream<? extends IFunction.SignatureElement> name) {
 		return functions.get(IFunction.computeSignature(name));
 	}
 	
@@ -321,7 +299,7 @@ public class DeferringStory implements IStory {
 	}
 
 	public boolean addFunction(DeferringFunction func) {
-		Logging.log(Statistics.FUNCTIONS, "Adding function %s", func.getSignature());
+		Statistics.FUNCTIONS.prepareLog(log).log("Adding function {}", func.getSignature());
 		return functions.put(func.getSignature(), func) == null;
 	}
 
@@ -354,9 +332,14 @@ public class DeferringStory implements IStory {
 
 	public boolean addValue(DeferringValue value) {
 		Optional<TokenString> name = value.NAME.map(LazyLookup::key);
-		Logging.log(Statistics.VALUES, "Adding value %s of %s as %s", name.orElse(TokenString.EMPTY), value.OWNER.key(), value.VALUE);
-		if(name.isPresent()) return values.computeIfAbsent(value.OWNER.get().NAME, s -> new HashMap<>()).putIfAbsent(name.get(), value) != null;
-		return freeValues.putIfAbsent(value.OWNER.key(), value) != null;
+		Statistics.VALUES.prepareLog(log).log("Adding value {} of {} as {}", name.orElse(TokenString.EMPTY), value.OWNER.key(), value.VALUE);
+		return name.map(tokens -> values.computeIfAbsent(value.OWNER.get().NAME, s -> new HashMap<>())
+				.putIfAbsent(tokens, value) != null
+			)
+			.orElseGet(() -> null != freeValues.putIfAbsent(
+				value.OWNER.key(),
+				value
+			));
 	}
 
 	@Override
@@ -376,10 +359,10 @@ public class DeferringStory implements IStory {
 
 	public boolean addDefault(DeferringDefault def) {
 		if(def.PROPERTY.isPresent()) {
-			Logging.log(Severity.DEBUG, "Adding default value %s of %s as %s", def.PROPERTY.get(), def.LABEL, def.VALUE);
+			log.debug("Adding default value {} of {} as {}", def.PROPERTY.get(), def.LABEL, def.VALUE);
 			return pdefaults.computeIfAbsent(def.LABEL, s -> new HashMap<>()).putIfAbsent(def.PROPERTY.get(), def) != null;
 		}
-		Logging.log(Severity.DEBUG, "Adding default value %s as %s", def.LABEL, def.VALUE);
+		log.debug("Adding default value {} as {}", def.LABEL, def.VALUE);
 		return defaults.putIfAbsent(def.LABEL, def) != null;
 	}
 
@@ -394,7 +377,7 @@ public class DeferringStory implements IStory {
 	}
 
 	public boolean addAction(DeferringAction act) {
-		Logging.log(Statistics.ACTIONS, "Adding action %s", act.NAME);
+		Statistics.ACTIONS.prepareLog(log).log("Adding action {}", act.NAME);
 		return actions.putIfAbsent(act.NAME, act) != null;
 	}
 
@@ -410,18 +393,19 @@ public class DeferringStory implements IStory {
 
 	public boolean addTable(DeferringTable t) {
 		if(t.NAME.isEmpty() && t.NUMBER.isEmpty()) throw new IllegalArgumentException("Nameless and numberless Table");
-		Logging.log(Statistics.TABLES, "Adding table %s - %s", t.NUMBER.map(TokenString::toString).orElse("N/A"), t.NAME.map(TokenString::toString).orElse("N/A"));
+		Statistics.TABLES.prepareLog(log).log("Adding table {} - {}", t.NUMBER.map(TokenString::toString).orElse("N/A"), t.NAME.map(TokenString::toString).orElse("N/A"));
 		boolean error = false;
-		if(t.NAME.isPresent()) error = error || tableNames.putIfAbsent(t.NAME.get(), t) != null;
+		if(t.NAME.isPresent()) error = tableNames.putIfAbsent(t.NAME.get(), t) != null;
 		if(t.NUMBER.isPresent()) error = error || tableNumbers.putIfAbsent(t.NUMBER.get(), t) != null;
 		return error;
 	}
 
 	public Stream<? extends DeferringContinuation> getContinuedTable(ITable<?> table) {
-		Optional<TokenString> name = table.name(), number = table.number();
+		Optional<TokenString> name = table.name();
+		Optional<TokenString> number = table.number();
 		return Stream.concat(
-				name.isEmpty() ? Stream.empty() : continuedNames.getOrDefault(name, Collections.emptyList()).stream(),
-						number.isEmpty() ? Stream.empty() : continuedNumbers.getOrDefault(number, Collections.emptyList()).stream()
+				name.isEmpty() ? Stream.empty() : continuedNames.getOrDefault(name.get(), Collections.emptyList()).stream(),
+						number.isEmpty() ? Stream.empty() : continuedNumbers.getOrDefault(number.get(), Collections.emptyList()).stream()
 				);
 	}
 
@@ -433,7 +417,7 @@ public class DeferringStory implements IStory {
 	}
 
 	public boolean addContinuation(DeferringContinuation con) {
-		Logging.log(Statistics.CONTINUED_TABLES, "Continuing table %s", con.TABLE_NAME);
+		Statistics.CONTINUED_TABLES.prepareLog(log).log("Continuing table {}", con.TABLE_NAME);
 		return (con.NUMBER ? continuedNumbers : continuedNames).computeIfAbsent(con.TABLE_NAME, s -> new LinkedList<>()).add(con);
 	}
 
@@ -449,7 +433,7 @@ public class DeferringStory implements IStory {
 
 	public boolean addAlias(DeferringAlias a) {
 		for(TokenString alias:a.ALIASES) {
-			Logging.log(Statistics.ALIASES, "Adding alias %s for %s", alias, a.ORIGINAL);
+			Statistics.ALIASES.prepareLog(log).log("Adding alias {} for {}", alias, a.ORIGINAL);
 		}
 		return aliases.add(a);
 	}
@@ -481,15 +465,15 @@ public class DeferringStory implements IStory {
 	}
 
 	public boolean addRule(DeferringRule def) {
-		Logging.log(Statistics.RULES, "Adding rule %s", def.NAME.map(TokenString::toString).orElse("without a name"));
+		Statistics.RULES.prepareLog(log).log("Adding rule {}", def.NAME.map(TokenString::toString).orElse("without a name"));
 		boolean change = false;
 		boolean pchange = false;
 		if(def instanceof DeferringActionRule act) {
-			change |= actionRules.computeIfAbsent(act.ACTION, s -> new LinkedList<>()).add(act);
+			change = actionRules.computeIfAbsent(act.ACTION, s -> new LinkedList<>()).add(act);
 			pchange = true;
 		}
 		if(def instanceof DeferringSimpleRule smp) {
-			change |= simpleRules.computeIfAbsent(smp.TRIGGER, s -> new LinkedList<>()).add(smp);
+			change = simpleRules.computeIfAbsent(smp.TRIGGER, s -> new LinkedList<>()).add(smp);
 			pchange = true;
 		}
 		Optional<TokenString> n = def.name();

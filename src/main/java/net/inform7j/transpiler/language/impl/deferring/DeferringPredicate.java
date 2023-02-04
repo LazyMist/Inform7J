@@ -16,11 +16,14 @@ import net.inform7j.transpiler.tokenizer.TokenString;
 
 public class DeferringPredicate extends DeferringFunction {
 	public static final TokenPattern WHETHER = new TokenPattern.Single(new TokenPredicate(Pattern.compile("if|whether", Pattern.CASE_INSENSITIVE)));
-	public static final String CAPTURE_THIS_VAR = "thisVar", CAPTURE_KIND = "kind", CAPTURE_BODY = "body";
+	private static final TokenPattern DEFINITION = TokenPattern.quoteIgnoreCase("definition:");
+	public static final String CAPTURE_THIS_VAR = "thisVar";
+	public static final String CAPTURE_KIND = "kind";
+	public static final String CAPTURE_BODY = "body";
 	@SuppressWarnings("hiding")
 	public static final List<Parser<DeferringPredicate>> PARSERS = Collections.unmodifiableList(Arrays.asList(
 			new Parser<>(
-					TokenPattern.quoteIgnoreCase("to decide").concat(WHETHER)
+					DEFINITION.concat(WHETHER)
 					.concat(PARAM_GLOB.loop())
 					.concat(":")
 					.concat(ENDLINE)
@@ -41,7 +44,7 @@ public class DeferringPredicate extends DeferringFunction {
 						return new DeferringPredicate(ctx.story(), ctx.source().source(), Stream.concat(Stream.of(new DeferredParameter(ctx.story(), ctx.source().source(), thisVar, m.cap(CAPTURE_KIND))), DeferringFunction.parseSignatures(ctx, m.capMulti(CAPTURE_NAME_PARAMS))), getNextBody(ctx.supplier()));
 					}),
 			new Parser<>(
-					TokenPattern.quoteIgnoreCase("definition:").concat(AN)
+					DEFINITION.concat(AN)
 					.concat(NOT_ENDMARKER_LOOP.capture(CAPTURE_KIND))
 					.concat(TokenPattern.quoteIgnoreCase("(called").concat(NOT_ENDMARKER_LOOP.capture(CAPTURE_THIS_VAR)).concat(")").omittable())
 					.concat(TokenPattern.quoteIgnoreCase("is").orIgnoreCase("has").orIgnoreCase("can"))
@@ -62,7 +65,7 @@ public class DeferringPredicate extends DeferringFunction {
 								);
 					}),
 			new Parser<>(
-					TokenPattern.quoteIgnoreCase("definition:").concatOptionalIgnoreCase("the")
+					DEFINITION.concatOptionalIgnoreCase("the")
 					.concat(NOT_ENDMARKER.capture(CAPTURE_NAME_PARAMS).loop(true))
 					.concat(TokenPattern.quoteIgnoreCase("is").orIgnoreCase("has").orIgnoreCase("can").capture(CAPTURE_NAME_PARAMS))
 					.concat(PARAM_GLOB.loop(true))

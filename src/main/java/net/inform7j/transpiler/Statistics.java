@@ -1,22 +1,26 @@
 package net.inform7j.transpiler;
 
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.spi.LoggingEventBuilder;
+
 import java.io.PrintStream;
 import java.util.Optional;
+import java.util.function.Function;
 
-import net.inform7j.Logging.Severity;
-
+@Slf4j
 public enum Statistics {
-	ERRORS(Severity.ERROR),
+	ERRORS(Logger::atError),
 	UNKNOWN_LINES(ERRORS),
 	BAD_BODY_STATEMENTS(ERRORS),
 	ERROR_EXCEPTIONS(ERRORS),
 	INCOMPLETE_INCLUDE(ERROR_EXCEPTIONS),
 	UNPROCESSED_BLOCK(ERRORS),
-	MISSING_FILES(Severity.FATAL),
-	WARNINGS(Severity.WARN),
+	MISSING_FILES(Logger::atError),
+	WARNINGS(Logger::atWarn),
 	INCOMPLETE_EOF_LINE(WARNINGS),
 	INCOMPLETE_LINES(WARNINGS),
-	ELEMENTS(Severity.DEBUG),
+	ELEMENTS(Logger::atDebug),
 	KINDS(ELEMENTS),
 	OBJECTS(ELEMENTS),
 	PROPERTIES(ELEMENTS),
@@ -27,12 +31,12 @@ public enum Statistics {
 	CONTINUED_TABLES(ELEMENTS),
 	VALUES(ELEMENTS),
 	ALIASES(ELEMENTS),
-	LINES(Severity.DEBUG);
+	LINES(Logger::atDebug);
 	private final Optional<Statistics> parent;
-	public final Severity logSeverity;
+	private final Function<Logger, LoggingEventBuilder> logSeverity;
 	private int count = 0;
 	
-	private Statistics(Severity severity) {
+	Statistics(Function<Logger, LoggingEventBuilder> severity) {
 		this.logSeverity = severity;
 		this.parent = Optional.empty();
 	}
@@ -60,10 +64,12 @@ public enum Statistics {
 	public Statistics decrement() {
 		return decrement(1);
 	}
-	
-	public static void printStats(PrintStream out) {
+	public LoggingEventBuilder prepareLog(Logger log) {
+		return increment().logSeverity.apply(log);
+	}
+	public static void printStats(Function<Logger, LoggingEventBuilder> severity) {
 		for(Statistics s:Statistics.values()) {
-			out.printf("%s: %d\n", s.name(), s.count());
+			severity.apply(log).log("{}: {}\n", s.name(), s.count());
 		}
 	}
 }

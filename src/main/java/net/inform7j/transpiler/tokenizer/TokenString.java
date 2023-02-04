@@ -59,15 +59,16 @@ public final class TokenString implements Iterable<Token> {
 	}
 	
 	public TokenString concat(TokenString ...others) {
-		Stream<Token> tokens = stream();
-		for(TokenString str:others) {
-			tokens = Stream.concat(tokens, str.stream());
-		}
-		return new TokenString(tokens);
+		return new TokenString(
+			Stream.concat(
+			    Stream.of(this),
+			    Arrays.stream(others)
+		    ).flatMap(TokenString::stream)
+		);
 	}
 	
 	public boolean contains(Token token) {
-		return stream().filter(token::equals).findAny().isPresent();
+		return stream().anyMatch(token::equals);
 	}
 	
 	@Override

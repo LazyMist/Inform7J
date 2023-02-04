@@ -12,7 +12,9 @@ import net.inform7j.transpiler.tokenizer.TokenString;
 import net.inform7j.transpiler.util.LazyLookup;
 
 public class DeferringObject extends DeferringImpl implements IObject {
-	public static final String CAPTURE_NAME = "name", CAPTURE_TYPE = "type", CAPTURE_OWNER = "owner";
+	public static final String CAPTURE_NAME = "name";
+	public static final String CAPTURE_TYPE = "type";
+	public static final String CAPTURE_OWNER = "owner";
 	public static final List<Parser<DeferringObject>> PARSERS = Collections.unmodifiableList(Arrays.asList(
 			new Parser<>(
 					TokenPattern.quoteIgnoreCase("the").omittable()

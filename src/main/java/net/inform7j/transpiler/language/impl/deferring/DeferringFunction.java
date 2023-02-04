@@ -1,21 +1,17 @@
 package net.inform7j.transpiler.language.impl.deferring;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import net.inform7j.Logging;
-import net.inform7j.Logging.Severity;
+import lombok.extern.slf4j.Slf4j;
 import net.inform7j.transpiler.Source;
-import net.inform7j.transpiler.Intake.IntakeReader;
+import net.inform7j.transpiler.IntakeReader;
 import net.inform7j.transpiler.language.IFunction;
 import net.inform7j.transpiler.language.IKind;
 import net.inform7j.transpiler.language.IStatement;
-import net.inform7j.transpiler.language.IStatement.StatementSupplier;
+import net.inform7j.transpiler.util.StatementSupplier;
 import net.inform7j.transpiler.language.IStory.BaseKind;
 import net.inform7j.transpiler.tokenizer.Token;
 import net.inform7j.transpiler.tokenizer.TokenPattern;
@@ -23,6 +19,7 @@ import net.inform7j.transpiler.tokenizer.TokenPattern.Result;
 import net.inform7j.transpiler.tokenizer.TokenPredicate;
 import net.inform7j.transpiler.tokenizer.TokenString;
 
+@Slf4j
 public class DeferringFunction extends DeferringImpl implements IFunction {
 	public static record DeferredParameter(DeferringStory story, Source source, TokenString name, TokenString kindName) implements ParameterElement {
 		public static final String CAPTURE_TYPE = "type";
@@ -67,12 +64,13 @@ public class DeferringFunction extends DeferringImpl implements IFunction {
 	}
 
 	public static final String CAPTURE_NAME = "name";
-	public static final TokenPattern NAME_GLOB = TokenPattern.Single.WORD.capture(CAPTURE_NAME).concat(TokenPattern.quote("/").concat(TokenPattern.Single.WORD.or("--").capture(CAPTURE_NAME)).loop().omittable()).or(TokenPattern.Single.PUNCTUATION.capture(CAPTURE_NAME)),
-			PARAM_GLOB = NAME_GLOB.or(DeferredParameter.PATTERN).clearCapture().capture(CAPTURE_NAME),
-			WHICH = new TokenPattern.Single(new TokenPredicate(Pattern.compile("which|what", Pattern.CASE_INSENSITIVE)));
+	public static final TokenPattern NAME_GLOB = TokenPattern.Single.WORD.capture(CAPTURE_NAME).concat(TokenPattern.quote("/").concat(TokenPattern.Single.WORD.or("--").capture(CAPTURE_NAME)).loop().omittable()).or(TokenPattern.Single.PUNCTUATION.capture(CAPTURE_NAME));
+	public static final TokenPattern PARAM_GLOB = NAME_GLOB.or(DeferredParameter.PATTERN).clearCapture().capture(CAPTURE_NAME);
+	public static final TokenPattern WHICH = new TokenPattern.Single(new TokenPredicate(Pattern.compile("which|what", Pattern.CASE_INSENSITIVE)));
 	//"(?:[^()\\s]+ ?|\\(.+? -(?: an?)? .+?\\) ?)"
 
-	public static final String CAPTURE_RETURN_TYPE = "returnType", CAPTURE_NAME_PARAMS = "nameParams";
+	public static final String CAPTURE_RETURN_TYPE = "returnType";
+	public static final String CAPTURE_NAME_PARAMS = "nameParams";
 	public static final List<Parser<DeferringFunction>> PARSERS = Collections.unmodifiableList(Arrays.asList(
 			new Parser<>(
 					TokenPattern.quoteIgnoreCase("to decide").concat(WHICH)
@@ -104,34 +102,34 @@ public class DeferringFunction extends DeferringImpl implements IFunction {
 			));
 
 	public final TokenString RETURN_TYPE;
-	public final List<SignatureElement> NAME;
+	public final List<? extends SignatureElement> NAME;
 	public final IStatement BODY;
-	public DeferringFunction(DeferringStory story, Source source, TokenString rETURN_TYPE, Stream<? extends SignatureElement> name,
+	public DeferringFunction(DeferringStory story, Source source, TokenString returnType, Stream<? extends SignatureElement> name,
 			IStatement bODY) {
 		super(story, source);
-		RETURN_TYPE = rETURN_TYPE;
-		NAME = Collections.unmodifiableList(name.toList());
+		RETURN_TYPE = returnType;
+		NAME = name.toList();
 		BODY = bODY;
 	}
-	public DeferringFunction(DeferringStory story, Source source, BaseKind return_type, Stream<? extends SignatureElement> name,
+	public DeferringFunction(DeferringStory story, Source source, BaseKind returnType, Stream<? extends SignatureElement> name,
 			IStatement bODY) {
-		this(story, source, return_type.writtenName, name, bODY);
+		this(story, source, returnType.writtenName, name, bODY);
 	}
-	public DeferringFunction(ParseContext ctx, TokenString return_type, IStatement body) {
+	public DeferringFunction(ParseContext ctx, TokenString returnType, IStatement body) {
 		super(ctx);
 		final Result m = ctx.result();
-		RETURN_TYPE = return_type;
+		RETURN_TYPE = returnType;
 		NAME = parseSignatures(ctx, m.capMulti(CAPTURE_NAME_PARAMS)).toList();
 		BODY = body;
 	}
-	public DeferringFunction(ParseContext ctx, TokenString return_type) {
-		this(ctx, return_type, getNextBody(ctx.supplier()));
+	public DeferringFunction(ParseContext ctx, TokenString returnType) {
+		this(ctx, returnType, getNextBody(ctx.supplier()));
 	}
-	public DeferringFunction(ParseContext ctx, BaseKind return_type, IStatement body) {
-		this(ctx, return_type.writtenName, body);
+	public DeferringFunction(ParseContext ctx, BaseKind returnType, IStatement body) {
+		this(ctx, returnType.writtenName, body);
 	}
-	public DeferringFunction(ParseContext ctx, BaseKind return_type) {
-		this(ctx, return_type.writtenName);
+	public DeferringFunction(ParseContext ctx, BaseKind returnType) {
+		this(ctx, returnType.writtenName);
 	}
 	public DeferringFunction(ParseContext ctx, IStatement body) {
 		this(ctx, ctx.result().cap(CAPTURE_RETURN_TYPE), body);
@@ -144,7 +142,11 @@ public class DeferringFunction extends DeferringImpl implements IFunction {
 		StatementSupplier sup = ctx.supplier();
 		while(true) {
 			Optional<? extends IStatement> opt = sup.getNextOptional(IStatement.class);
-			if(Logging.log_assert(opt.isPresent(), Severity.FATAL, "Unclosed Raw block starting in: %s@%d", ctx.source().src(), ctx.source().line())) if(IntakeReader.tailMatch(opt.get(), IntakeReader.RAW_END, true)) break;
+			if(opt.isPresent()) {
+				if(IntakeReader.tailMatch(opt.get(), IntakeReader.RAW_END, true)) break;
+			} else {
+				log.error("Unclosed Raw block starting in: {}@{}", ctx.source().src(), ctx.source().line());
+			}
 		}
 		return RawClosed(ctx);
 	}
@@ -155,7 +157,7 @@ public class DeferringFunction extends DeferringImpl implements IFunction {
 
 	@Override
 	public Stream<? extends DeferringKind> streamParameters() {
-		return streamName().map(s -> (s instanceof DeferredParameter p) ? p.kind() : null).filter(p -> p != null);
+		return streamName().map(s -> (s instanceof DeferredParameter p) ? p.kind() : null).filter(Objects::nonNull);
 	}
 
 	@Override

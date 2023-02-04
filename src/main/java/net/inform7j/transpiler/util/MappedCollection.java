@@ -3,6 +3,7 @@ package net.inform7j.transpiler.util;
 import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.Spliterator;
 import java.util.function.Function;
 import java.util.function.IntFunction;
@@ -31,7 +32,7 @@ public record MappedCollection<K,V>(Collection<? extends K> backing, Function<? 
 
 	@Override
 	public boolean contains(Object arg0) {
-		return backing.stream().map(mapping).anyMatch(arg0 == null ? s->s==null : arg0::equals);
+		return backing.stream().map(mapping).anyMatch(arg0 == null ? Objects::isNull : arg0::equals);
 	}
 
 	@Override

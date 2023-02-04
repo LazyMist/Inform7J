@@ -16,62 +16,63 @@ import net.inform7j.transpiler.util.LazyLookup;
 
 public class DeferringValue extends DeferringImpl implements IValue {
 	public static final TokenPattern FILE = new TokenPattern.Single(new TokenPredicate(Pattern.compile("file", Pattern.CASE_INSENSITIVE)));
-	public static final String CAPTURE_NAME = "name", CAPTURE_OBJECT = "object", CAPTURE_VALUE = "value";
-	private static final TokenPattern.Replacement OBJ = new TokenPattern.Replacement(DeferringStory.OBJECT_NAME_REPLACEMENT, false),
-			PROP = new TokenPattern.Replacement(DeferringStory.OBJECT_PROPERTY_NAME_REPLACEMENT, false),
-			GPROP = new TokenPattern.Replacement(DeferringStory.PROPERTY_NAME_REPLACEMENT, false);
-	public static final List<Parser<DeferringValue>> PARSERS = Collections.unmodifiableList(Arrays.asList(
-			new Parser<>(
-					TokenPattern.Single.STRING.capture(CAPTURE_VALUE)
-					.concat(ENDMARKER)
-					/*Pattern.compile("^(?<value>\"[^\"]++\")(?>\\s*+(?>\\.|;))?")*/,
-					DeferringValue::Desc
-					),
-			new Parser<>(
-					TokenPattern.quoteIgnoreCase("to decide").orIgnoreCase("Rule for").lookahead(true)
-					.concat(TokenPattern.quoteIgnoreCase("the").omittable())
-					.concat(OBJ.capture(CAPTURE_OBJECT, DeferringStory.PROPERTY_NAME_REPLACEMENT_OBJECT_CAPTURE))
-					.concat(TokenPattern.quoteIgnoreCase("is not").orIgnoreCase("isn't")).concat(PROP.capture(CAPTURE_NAME))
-					.concat(ENDMARKER),
-					DeferringValue::FalseProp
-					),
-			new Parser<>(
-					TokenPattern.quoteIgnoreCase("to decide").orIgnoreCase("Rule for").lookahead(true)
-					.concat(TokenPattern.quoteIgnoreCase("the").omittable())
-					.concat(OBJ.capture(CAPTURE_OBJECT, DeferringStory.PROPERTY_NAME_REPLACEMENT_OBJECT_CAPTURE))
-					.concatIgnoreCase("is").concat(PROP.capture(CAPTURE_NAME))
-					.concat(ENDMARKER),
-					DeferringValue::TrueProp
-					),
-			new Parser<>(
-					TokenPattern.quoteIgnoreCase("to decide").orIgnoreCase("Rule for").lookahead(true)
-					.concat(TokenPattern.quoteIgnoreCase("the").omittable())
-					.concat(GPROP.capture(CAPTURE_NAME).concatIgnoreCase("of").omittable())
-					.concat(OBJ.capture(CAPTURE_OBJECT))
-					.concatIgnoreCase("is").concat(TokenPattern.quoteIgnoreCase("a kind").orIgnoreCase("an action").lookahead(true))
-					.concat(TokenPattern.quoteIgnoreCase("called").or(TokenPattern.quoteIgnoreCase("the").concatIgnoreCase("file")).omittable())
-					.concat(NOT_ENDMARKER_LOOP.capture(CAPTURE_VALUE))
-					.concat(ENDMARKER)
-					/*Pattern.compile("^(?>the )?(?>(?<name>[^\"\\.]+?) of )?(?<object>[^\"\\.]+?)\\s+(?>is) (?>called |the file )?(?<value>(?>\\{\\s*+)?(?:(?:\"[^\"]*+\"|[^\"{},\\.;]+)(?:\\s*+,\\s*+)?)+(?>\\s*+\\})?)\\s*+(?:\\.|;|$)", Pattern.CASE_INSENSITIVE)*/,
-					DeferringValue::new
-					),
-			new Parser<>(
-					TokenPattern.quoteIgnoreCase("to decide").orIgnoreCase("Rule for").lookahead(true)
-					.concat(TokenPattern.quoteIgnoreCase("the").omittable())
-					.concat(OBJ.capture(CAPTURE_OBJECT, DeferringStory.PROPERTY_NAME_REPLACEMENT_OBJECT_CAPTURE))
-					.concatIgnoreCase("has").concat(AN)
-					.concat(PROP.capture(CAPTURE_NAME))
-					.concat(TokenPattern.Single.STRING.capture(CAPTURE_VALUE))
-					.concat(ENDMARKER),
-					DeferringValue::new
-					)
-			));
+	public static final String CAPTURE_NAME = "name";
+	public static final String CAPTURE_OBJECT = "object";
+	public static final String CAPTURE_VALUE = "value";
+	private static final TokenPattern.Replacement OBJ = new TokenPattern.Replacement(DeferringStory.OBJECT_NAME_REPLACEMENT, false);
+	private static final TokenPattern.Replacement PROP = new TokenPattern.Replacement(DeferringStory.OBJECT_PROPERTY_NAME_REPLACEMENT, false);
+	private static final TokenPattern.Replacement GPROP = new TokenPattern.Replacement(DeferringStory.PROPERTY_NAME_REPLACEMENT, false);
+	private static final TokenPattern RULE_START = TokenPattern.quoteIgnoreCase("to decide").orIgnoreCase("Rule for");
+	public static final List<Parser<DeferringValue>> PARSERS = List.of(new Parser<>(
+		TokenPattern.Single.STRING.capture(CAPTURE_VALUE)
+			.concat(ENDMARKER)
+		/*Pattern.compile("^(?<value>\"[^\"]++\")(?>\\s*+(?>\\.|;))?")*/,
+		DeferringValue::Desc
+	), new Parser<>(
+		RULE_START.lookahead(true)
+			.concat(TokenPattern.quoteIgnoreCase("the").omittable())
+			.concat(OBJ.capture(CAPTURE_OBJECT, DeferringStory.PROPERTY_NAME_REPLACEMENT_OBJECT_CAPTURE))
+			.concat(TokenPattern.quoteIgnoreCase("is not").orIgnoreCase("isn't")).concat(PROP.capture(CAPTURE_NAME))
+			.concat(ENDMARKER),
+		DeferringValue::FalseProp
+	), new Parser<>(
+		RULE_START.lookahead(true)
+			.concat(TokenPattern.quoteIgnoreCase("the").omittable())
+			.concat(OBJ.capture(CAPTURE_OBJECT, DeferringStory.PROPERTY_NAME_REPLACEMENT_OBJECT_CAPTURE))
+			.concatIgnoreCase("is").concat(PROP.capture(CAPTURE_NAME))
+			.concat(ENDMARKER),
+		DeferringValue::TrueProp
+	), new Parser<>(
+		RULE_START.lookahead(true)
+			.concat(TokenPattern.quoteIgnoreCase("the").omittable())
+			.concat(GPROP.capture(CAPTURE_NAME).concatIgnoreCase("of").omittable())
+			.concat(OBJ.capture(CAPTURE_OBJECT))
+			.concatIgnoreCase("is").concat(TokenPattern.quoteIgnoreCase("a kind")
+				.orIgnoreCase("an action")
+				.lookahead(true))
+			.concat(TokenPattern.quoteIgnoreCase("called")
+				.or(TokenPattern.quoteIgnoreCase("the").concatIgnoreCase("file"))
+				.omittable())
+			.concat(NOT_ENDMARKER_LOOP.capture(CAPTURE_VALUE))
+			.concat(ENDMARKER)
+		/*Pattern.compile("^(?>the )?(?>(?<name>[^\"\\.]+?) of )?(?<object>[^\"\\.]+?)\\s+(?>is) (?>called |the file )?(?<value>(?>\\{\\s*+)?(?:(?:\"[^\"]*+\"|[^\"{},\\.;]+)(?:\\s*+,\\s*+)?)+(?>\\s*+\\})?)\\s*+(?:\\.|;|$)", Pattern.CASE_INSENSITIVE)*/,
+		DeferringValue::new
+	), new Parser<>(
+		RULE_START.lookahead(true)
+			.concat(TokenPattern.quoteIgnoreCase("the").omittable())
+			.concat(OBJ.capture(CAPTURE_OBJECT, DeferringStory.PROPERTY_NAME_REPLACEMENT_OBJECT_CAPTURE))
+			.concatIgnoreCase("has").concat(AN)
+			.concat(PROP.capture(CAPTURE_NAME))
+			.concat(TokenPattern.Single.STRING.capture(CAPTURE_VALUE))
+			.concat(ENDMARKER),
+		DeferringValue::new
+	));
 	
 	public final LazyLookup<TokenString, DeferringObject> OWNER;
 	public final TokenString VALUE;
 	public final Optional<LazyLookup<TokenString, DeferringProperty>> NAME;
 
-	public DeferringValue(DeferringStory story, Source source, DeferringObject oWNER, Optional<? extends DeferringProperty> nAME, TokenString vALUE) {
+	public DeferringValue(DeferringStory story, Source source, DeferringObject oWNER, Optional<DeferringProperty> nAME, TokenString vALUE) {
 		super(story, source);
 		NAME = nAME.map(p -> new LazyLookup<>(p.NAME, p));
 		OWNER = new LazyLookup<>(oWNER.NAME, oWNER);

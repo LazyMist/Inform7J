@@ -6,16 +6,16 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import net.inform7j.Logging;
-import net.inform7j.Logging.Severity;
-import net.inform7j.transpiler.Intake.IntakeReader;
+import lombok.extern.slf4j.Slf4j;
+import net.inform7j.transpiler.IntakeReader;
 import net.inform7j.transpiler.Source;
 import net.inform7j.transpiler.language.IStatement;
-import net.inform7j.transpiler.language.IStatement.StatementSupplier;
+import net.inform7j.transpiler.util.StatementSupplier;
 import net.inform7j.transpiler.language.IStory.BaseKind;
 import net.inform7j.transpiler.tokenizer.TokenPattern;
 import net.inform7j.transpiler.tokenizer.TokenPredicate;
 
+@Slf4j
 public class DeferringRoutine extends DeferringFunction {
 	@SuppressWarnings("hiding")
 	public static final List<Parser<DeferringRoutine>> PARSERS = Collections.unmodifiableList(Arrays.asList(
@@ -55,7 +55,11 @@ public class DeferringRoutine extends DeferringFunction {
 		StatementSupplier sup = ctx.supplier();
 		while(true) {
 			Optional<? extends IStatement> opt = sup.getNextOptional(IStatement.class);
-			if(Logging.log_assert(opt.isPresent(), Severity.FATAL, "Unclosed Raw block starting in: %s@%d", ctx.source().src(), ctx.source().line())) if(IntakeReader.tailMatch(opt.get(), IntakeReader.RAW_END, true)) break;
+			if(opt.isPresent()) {
+				if(IntakeReader.tailMatch(opt.get(), IntakeReader.RAW_END, true)) break;
+			} else {
+				log.error("Unclosed Raw block starting in: {}@{}", ctx.source().src(), ctx.source().line());
+			}
 		}
 		return RawClosed(ctx);
 	}

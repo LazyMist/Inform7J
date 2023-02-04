@@ -5,7 +5,7 @@ import java.util.Optional;
 import net.inform7j.transpiler.tokenizer.TokenString;
 
 public sealed interface Source permits Source.Extension, Source.Story {
-	public static class LazyString {
+	class LazyString {
 		private Optional<TokenString> opt = Optional.empty();
 		public Optional<TokenString> get() {
 			return opt;
@@ -14,7 +14,7 @@ public sealed interface Source permits Source.Extension, Source.Story {
 			opt = opt.or(() -> Optional.of(name));
 		}
 	}
-	public static record Extension(String author, String title, LazyString tokenName) implements Source {
+	record Extension(String author, String title, LazyString tokenName) implements Source {
 		public Extension(String author, String title) {
 			this(author, title, new LazyString());
 		}
@@ -23,8 +23,8 @@ public sealed interface Source permits Source.Extension, Source.Story {
 			return title+" by "+author;
 		}
 	}
-	public static enum Story implements Source {
+	enum Story implements Source {
 		MAIN;
 	}
-	public String name();
+	String name();
 }

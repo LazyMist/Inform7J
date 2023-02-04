@@ -14,7 +14,9 @@ import net.inform7j.transpiler.tokenizer.TokenString;
 
 public class DeferringDefault extends DeferringImpl implements IDefault {
 	public static final TokenPattern USUALLY = new TokenPattern.Single(new TokenPredicate(Pattern.compile("usually|normally", Pattern.CASE_INSENSITIVE)));
-	public static final String CAPTURE_PROPERTY = "property", CAPTURE_OBJECT = "object", CAPTURE_VALUE = "value";
+	public static final String CAPTURE_PROPERTY = "property";
+	public static final String CAPTURE_OBJECT = "object";
+	public static final String CAPTURE_VALUE = "value";
 	public static final List<Parser<DeferringDefault>> PARSERS = Collections.unmodifiableList(Arrays.asList(
 			new Parser<>(
 					WORD_LOOP.capture(CAPTURE_PROPERTY).concatIgnoreCase("of").omittable()
@@ -36,7 +38,8 @@ public class DeferringDefault extends DeferringImpl implements IDefault {
 					)
 			));
 
-	public final TokenString LABEL, VALUE;
+	public final TokenString LABEL;
+	public final TokenString VALUE;
 	public final Optional<TokenString> PROPERTY;
 
 	public DeferringDefault(DeferringStory story, Source source, Optional<TokenString> property, TokenString lABEL, TokenString vALUE) {

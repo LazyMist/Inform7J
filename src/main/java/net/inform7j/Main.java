@@ -1,28 +1,35 @@
 package net.inform7j;
 
+import java.io.IOException;
+import java.io.StringBufferInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.logging.Level;
+import java.util.logging.LogManager;
 
 import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
-import net.inform7j.Logging.Severity;
+import lombok.extern.slf4j.Slf4j;
 import net.inform7j.transpiler.Intake;
-import net.inform7j.transpiler.Intake.IntakeReader;
+import net.inform7j.transpiler.IntakeReader;
 import net.inform7j.transpiler.Statistics;
+import org.slf4j.Logger;
 
+@Slf4j
 public class Main {
-	public static enum ParseState {
+	public enum ParseState {
 		CMD,
 		EXT_PATH,
 		LOG_SEVERITY;
 	}
 
 	public static void main(String[] args) {
-		Path src = null, ext = null;
+		Path src = null;
+		Path ext = null;
 		ParseState state = ParseState.CMD;
 		boolean stopOnError = false;
 		for(String s:args) {
@@ -52,19 +59,24 @@ public class Main {
 					stopOnError = true;
 					break;
 				default:
-					Logging.log_assert(src == null, Severity.WARN, "Multiple inputs specified.");
+					if(src != null) log.warn("Multiple inputs specified.");
 					Path n = Paths.get(s);
-					if(Logging.log_assert(Files.exists(n), Severity.ERROR, "%s doesn't exist", s)) src = n;
+					if(Files.exists(n)) src = n;
+					else log.error("{} doesn't exist", s);
 					break;
 				}
 				break;
 			case EXT_PATH:
-				Logging.log_assert(ext == null, Severity.WARN, "Extension folder path specified multiple times.");
+				if(ext != null) log.warn("Extension folder path specified multiple times.");
 				ext = Paths.get(s);
 				state = ParseState.CMD;
 				break;
 			case LOG_SEVERITY:
-				Logging.MINIMUM_SEVERITY = Severity.valueOf(s);
+				try {
+					LogManager.getLogManager().updateConfiguration(s0 -> ".level".equals(s0) ? (o, n) -> s : null);
+				} catch(IOException ex) {
+					log.error("", ex);
+				}
 				state = ParseState.CMD;
 				break;
 			}
@@ -95,19 +107,24 @@ public class Main {
 				);
 		try{
 			rdr.run();
-			System.out.println("Kinds:");
-			rdr.trg().streamKinds().forEachOrdered(System.out::println);
-			System.out.println("\nProperties:");
-			rdr.trg().streamProperties().forEachOrdered(System.out::println);
-			System.out.println("\nObjects:");
-			rdr.trg().streamObjects().forEachOrdered(System.out::println);
-			System.out.println("\nValues:");
-			rdr.trg().streamValues().forEachOrdered(System.out::println);
+			log.info("Kinds");
+			rdr.trg().streamKinds().forEachOrdered(Main::logInfoObject);
+			log.info("Properties:");
+			rdr.trg().streamProperties().forEachOrdered(Main::logInfoObject);
+			log.info("Objects:");
+			rdr.trg().streamObjects().forEachOrdered(Main::logInfoObject);
+			log.info("Values:");
+			rdr.trg().streamValues().forEachOrdered(Main::logInfoObject);
 		} catch(RuntimeException ex) {
-			Logging.log(Statistics.ERROR_EXCEPTIONS, ex);
+			Statistics.ERROR_EXCEPTIONS.prepareLog(log)
+				.setCause(ex)
+				.log();
 		} finally {
-			Statistics.printStats(Logging.OUT);
+			Statistics.printStats(Logger::atInfo);
 		}
 	}
-
+	
+	private static void logInfoObject(Object o) {
+		log.info("{}", o);
+	}
 }

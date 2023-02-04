@@ -6,8 +6,8 @@ import net.inform7j.transpiler.language.IStory.Element;
 import net.inform7j.transpiler.tokenizer.TokenString;
 
 public interface IAction extends Element {
-	public TokenString name();
-	public Optional<? extends IKind> primary();
-	public Optional<? extends IKind> secondary();
-	public Optional<TokenString> requirements();
+	TokenString name();
+	Optional<? extends IKind> primary();
+	Optional<? extends IKind> secondary();
+	Optional<TokenString> requirements();
 }

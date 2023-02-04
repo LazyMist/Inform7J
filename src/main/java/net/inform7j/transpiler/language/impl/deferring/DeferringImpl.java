@@ -5,7 +5,7 @@ import java.util.regex.Pattern;
 
 import net.inform7j.transpiler.Source;
 import net.inform7j.transpiler.language.IStatement;
-import net.inform7j.transpiler.language.IStatement.StatementSupplier;
+import net.inform7j.transpiler.util.StatementSupplier;
 import net.inform7j.transpiler.language.IStory;
 import net.inform7j.transpiler.tokenizer.Token;
 import net.inform7j.transpiler.tokenizer.TokenPattern;

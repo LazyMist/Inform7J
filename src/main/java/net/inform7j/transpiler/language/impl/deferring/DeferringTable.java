@@ -12,7 +12,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import net.inform7j.transpiler.Source;
-import net.inform7j.transpiler.language.IStatement.StatementSupplier;
+import net.inform7j.transpiler.util.StatementSupplier;
 import net.inform7j.transpiler.language.ITable;
 import net.inform7j.transpiler.tokenizer.Token;
 import net.inform7j.transpiler.tokenizer.TokenPattern;
@@ -21,8 +21,9 @@ import net.inform7j.transpiler.tokenizer.TokenPredicate;
 import net.inform7j.transpiler.tokenizer.TokenString;
 
 public class DeferringTable extends DeferringImpl implements ITable<DeferringTable.DeferringColumn> {
-	public static record DeferringColumn(DeferringTable table, TokenString name, Optional<TokenString> kind) implements IColumn<DeferringColumn> {
-		public static final TokenPattern HDR = TokenPattern.Single.WORD.or(new TokenPattern.Single(new TokenPredicate(Token.Type.PUNCTUATION, s -> !s.equals("(")))).loop()
+	public record DeferringColumn(DeferringTable table, TokenString name, Optional<TokenString> kind) implements IColumn<DeferringColumn> {
+		public static final TokenPattern HDR = TokenPattern.Single.WORD.or(new TokenPattern.Single(new TokenPredicate(Token.Type.PUNCTUATION, s -> !"(".equals(
+				s)))).loop()
 				.capture(CAPTURE_NAME).concat(TokenPattern.quote("(").concat(WORD_LOOP.capture(CAPTURE_TYPE)).concat(")").omittable()),
 				HDR_FULL = HDR.concat(TokenPattern.END);
 				//Pattern.compile("^(?<name>.+?)(?:\\s*\\((?<type>.+?)\\))?$")
@@ -72,7 +73,7 @@ public class DeferringTable extends DeferringImpl implements ITable<DeferringTab
 			return new DeferringContinuation(ctx.story(), ctx.source().source(), name, m.capOpt(CAPTURE_OF).isEmpty(), str.build().map(ContinuedColumn::parse), parseEntries(ctx.supplier()));
 		}
 		
-		public static record ContinuedColumn(TokenString name, Optional<TokenString> kind) {
+		public record ContinuedColumn(TokenString name, Optional<TokenString> kind) {
 			public static ContinuedColumn parse(TokenString s) {
 				Optional<Result> m = DeferringColumn.HDR.matches(s).findFirst();
 				if(m.isEmpty()) throw new IllegalArgumentException("Not a Column Header: "+s);
@@ -85,21 +86,21 @@ public class DeferringTable extends DeferringImpl implements ITable<DeferringTab
 		public final boolean NUMBER;
 		public final Map<TokenString,TokenString> KINDSPEC;
 		private final List<Map<TokenString,TokenString>> ROWS;
-		public DeferringContinuation(DeferringStory story, Source source, TokenString tABLE, boolean nUMBER, Stream<? extends ContinuedColumn> hdr,
+		public DeferringContinuation(DeferringStory story, Source source, TokenString tABLE, boolean nUMBER, Stream<ContinuedColumn> hdr,
 				Stream<? extends Stream<TokenString>> rOWS) {
 			super(story, source);
 			TABLE_NAME = tABLE;
 			NUMBER = nUMBER;
-			final List<? extends ContinuedColumn> cols = hdr.toList();
+			final List<ContinuedColumn> cols = hdr.toList();
 			KINDSPEC = cols.stream().filter(c -> c.kind().isPresent()).collect(Collectors.toUnmodifiableMap(ContinuedColumn::name, c -> c.kind().get()));
 			ROWS = Collections.unmodifiableList(rOWS.map(Stream::toList).map(l -> {
 				if(l.size() > cols.size()) throw new IllegalArgumentException("Row Mismatch: expected "+cols.size()+" got "+l.size()+":\n"+cols+"\n"+l);
 				return IntStream.range(0, l.size())
 						.boxed()
 						.collect(Collectors.toUnmodifiableMap(
-								i -> cols.get(i).name(),
-								i -> l.get(i)
-								));
+							i -> cols.get(i).name(),
+							l::get
+						));
 			}).toList());
 		}
 		public DeferringTable table() {
@@ -111,15 +112,19 @@ public class DeferringTable extends DeferringImpl implements ITable<DeferringTab
 			return Optional.of(story.getKind(spec));
 		}
 		public Stream<Map<DeferringColumn, TokenString>> rows() {
-			Stream<? extends DeferringColumn> t = table().columns();
+			DeferringTable t = table();
 			return ROWS.stream().map(m -> m.entrySet().stream()
 					.collect(Collectors.toUnmodifiableMap(
-							e -> t.filter(d -> d.name().equals(e.getKey())).findFirst().get(),
-							Entry::getValue)
-							));
+						e -> t.columns().filter(d -> d.name().equals(e.getKey())).findFirst().orElseThrow(),
+						Entry::getValue
+					))
+			);
 		}
 	}
-	public static final String CAPTURE_NUMBER = "number", CAPTURE_NAME = "name", CAPTURE_TYPE = "type", CAPTURE_COUNT = "count";
+	public static final String CAPTURE_NUMBER = "number";
+	public static final String CAPTURE_NAME = "name";
+	public static final String CAPTURE_TYPE = "type";
+	public static final String CAPTURE_COUNT = "count";
 	public static final Parser<DeferringTable> PARSER = new Parser<>(
 			TokenPattern.quoteIgnoreCase("Table")
 			.concat(
@@ -128,8 +133,8 @@ public class DeferringTable extends DeferringImpl implements ITable<DeferringTab
 			.concat(ENDLINE)
 			/*Pattern.compile("^Table (?:(?<number>\\w+)(?: - (?<name>.+?))|of (?<name2>.+?))\\s*$", Pattern.CASE_INSENSITIVE)*/,
 			DeferringTable::parse);
-	public static final TokenPattern EMPTY = TokenPattern.quote("--"),
-			FINALIZER = TokenPattern.quoteIgnoreCase("with").concat(TokenPattern.Single.WORD.capture(CAPTURE_COUNT))
+	public static final TokenPattern EMPTY = TokenPattern.quote("--");
+	public static final TokenPattern FINALIZER = TokenPattern.quoteIgnoreCase("with").concat(TokenPattern.Single.WORD.capture(CAPTURE_COUNT))
 			.concatIgnoreCase("blank")
 			.concat(TokenPattern.quoteIgnoreCase("row").orIgnoreCase("rows"))
 			.concat(ENDMARKER);
@@ -137,7 +142,7 @@ public class DeferringTable extends DeferringImpl implements ITable<DeferringTab
 	private static Stream<Stream<TokenString>> parseEntries(StatementSupplier sup) {
 		Stream.Builder<Stream<TokenString>> entries = Stream.builder();
 		while(true) {
-			Optional<? extends RawLineStatement> entryLine = sup.getNextOptional(RawLineStatement.class);
+			Optional<RawLineStatement> entryLine = sup.getNextOptional(RawLineStatement.class);
 			if(entryLine.isEmpty()) break;
 			RawLineStatement line = entryLine.get();
 			if(line.isBlank()) continue;
@@ -194,10 +199,11 @@ public class DeferringTable extends DeferringImpl implements ITable<DeferringTab
 		return new DeferringTable(ctx.story(), ctx.source().source(), m.capOpt(CAPTURE_NUMBER), m.capOpt(CAPTURE_NAME), str.build().map(DeferringColumn::parse), parseEntries(ctx.supplier()));
 	}
 	
-	public final Optional<TokenString> NUMBER, NAME;
+	public final Optional<TokenString> NUMBER;
+	public final Optional<TokenString> NAME;
 	public final List<DeferringColumn> COLUMNS;
 	private final List<Map<DeferringColumn,TokenString>> ROWS;
-	public DeferringTable(DeferringStory story, Source source, Optional<TokenString> nUMBER, Optional<TokenString> nAME, Stream<? extends Function<? super DeferringTable, ? extends DeferringColumn>> cOLUMNS,
+	public DeferringTable(DeferringStory story, Source source, Optional<TokenString> nUMBER, Optional<TokenString> nAME, Stream<? extends Function<? super DeferringTable, DeferringColumn>> cOLUMNS,
 			Stream<? extends Stream<TokenString>> rOWS) {
 		super(story, source);
 		NUMBER = nUMBER;
@@ -207,9 +213,9 @@ public class DeferringTable extends DeferringImpl implements ITable<DeferringTab
 			if(l.size() > COLUMNS.size()) throw new IllegalArgumentException("Row Mismatch: expected "+COLUMNS.size()+" got "+l.size()+":\n"+l.stream().map(TokenString::toString).collect(Collectors.joining("\n")));
 			return IntStream.range(0, l.size()).boxed()
 					.collect(Collectors.toUnmodifiableMap(
-							COLUMNS::get,
-							i -> l.get(i)
-							));
+						COLUMNS::get,
+						l::get
+					));
 		}).toList());
 	}
 	
@@ -222,7 +228,7 @@ public class DeferringTable extends DeferringImpl implements ITable<DeferringTab
 		return NAME;
 	}
 	@Override
-	public Stream<? extends DeferringColumn> columns() {
+	public Stream<DeferringColumn> columns() {
 		return COLUMNS.stream();
 	}
 	@Override

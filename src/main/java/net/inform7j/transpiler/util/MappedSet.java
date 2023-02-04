@@ -1,10 +1,7 @@
 package net.inform7j.transpiler.util;
 
 import java.lang.reflect.Array;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Set;
-import java.util.Spliterator;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
@@ -31,7 +28,7 @@ public record MappedSet<K, V> (Set<? extends K> backing, Function<? super K,? ex
 
 	@Override
 	public boolean contains(Object arg0) {
-		return backing.stream().map(mapping).anyMatch(arg0 == null ? s->s==null : arg0::equals);
+		return backing.stream().map(mapping).anyMatch(arg0 == null ? Objects::isNull : arg0::equals);
 	}
 
 	@Override

@@ -11,11 +11,11 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import net.inform7j.Logging;
-import net.inform7j.Logging.Severity;
+import lombok.extern.slf4j.Slf4j;
 import net.inform7j.transpiler.Source;
 import net.inform7j.transpiler.Statistics;
 
+@Slf4j
 public record Token(Type type, String content) {
 	public static String toString(Stream<Token> tokens) {
 		return tokens.map(Token::fmtContent).collect(Collectors.joining(" "));
@@ -42,7 +42,7 @@ public record Token(Type type, String content) {
 	}
 	
 	public boolean equalsIgnoreCase(Token other) {
-		return type.equals(other.type) && content.equalsIgnoreCase(other.content);
+		return type == other.type && content.equalsIgnoreCase(other.content);
 	}
 	
 	public Token toLowerCase() {
@@ -58,17 +58,17 @@ public record Token(Type type, String content) {
 	}
 	
 	public Token normalize() {
-		if(type.CASE_SENSITIVE) return this;
+		if(type.caseSensitive) return this;
 		return toLowerCase();
 	}
 	
-	public static record SourcedToken(Token tok, long line, Path src, Source source) {
+	public record SourcedToken(Token tok, long line, Path src, Source source) {
 		public static String toString(List<SourcedToken> tok) {
 			return Token.toString(tok.stream().map(SourcedToken::tok));
 		}
 	}
 	
-	public static enum Type {
+	public enum Type {
 		WORD(false),
 		TAB(false),
 		NEWLINE(false),
@@ -76,13 +76,16 @@ public record Token(Type type, String content) {
 		STRING(true),
 		PUNCTUATION(true),
 		COMMENT(true);
-		public final boolean CASE_SENSITIVE;
-		private Type(boolean caseSensitive) {
-			this.CASE_SENSITIVE = caseSensitive;
+		public final boolean caseSensitive;
+		Type(boolean caseSensitive) {
+			this.caseSensitive = caseSensitive;
 		}
 	}
 	
  	public static class Generator implements IntConsumer, Runnable {
+		private IllegalStateException invalidTypeException() {
+			return new IllegalStateException("Invalid Type "+type);
+		}
  		public static Stream<Token> parseLiteral(IntStream cp) {
  			Stream.Builder<SourcedToken> con = Stream.builder();
  			new Generator(null, null, con).absorbStream(cp);
@@ -116,25 +119,24 @@ public record Token(Type type, String content) {
 		public void run() {
 			switch(type) {
 			case COMMENT:
-				Logging.log(Statistics.INCOMPLETE_EOF_LINE, "Unclosed comment");
-				for(int i=0; i<commentDepth; i++) buff.append("]");
+				Statistics.INCOMPLETE_EOF_LINE.prepareLog(log).log("Unclosed comment");
+				buff.append("]".repeat(commentDepth));
 				output.accept(new SourcedToken(new Token(type, buff.toString()), line, src, source));
 				buff = new StringBuilder();
 				break;
-			case INDENT:
-			case NEWLINE:
-			case PUNCTUATION:
-			case TAB:
+			case INDENT, NEWLINE, PUNCTUATION, TAB:
 				break;
 			case STRING:
-				Logging.log(Statistics.INCOMPLETE_EOF_LINE, "Unclosed String");
-				for(int i=0; i<commentDepth; i++) buff.append("]");
+				Statistics.INCOMPLETE_EOF_LINE.prepareLog(log).log("Unclosed String");
+				buff.append("]".repeat(commentDepth));
 				buff.append('"');
 				//$FALL-THROUGH$
 			case WORD:
 				output.accept(new SourcedToken(new Token(type, buff.toString()), line, src, source));
 				buff = new StringBuilder();
 				break;
+			default:
+				throw invalidTypeException();
 			}
 			type = Type.NEWLINE;
 			oflush.run();
@@ -151,15 +153,11 @@ public record Token(Type type, String content) {
 			Type oldType = type;
 			if(codePoint == '\n') {
 				switch(type) {
-				case INDENT:
-				case NEWLINE:
-				case PUNCTUATION:
-				case TAB:
+				case INDENT,NEWLINE,PUNCTUATION,TAB:
 					type = Type.NEWLINE;
 					output.accept(new SourcedToken(new Token(type, Character.toString(codePoint)), line, src, source));
 					break;
-				case COMMENT:
-				case STRING:
+				case COMMENT,STRING:
 					buff.appendCodePoint(codePoint);
 					break;
 				case WORD:
@@ -168,22 +166,21 @@ public record Token(Type type, String content) {
 					type = Type.NEWLINE;
 					output.accept(new SourcedToken(new Token(type, Character.toString(codePoint)), line, src, source));
 					break;
+				default:
+					throw invalidTypeException();
 				}
 				line++;
 			} else if(codePoint == '\t') {
 				switch(type) {
-				case INDENT:
-				case NEWLINE:
+				case INDENT,NEWLINE:
 					type = Type.INDENT;
 					output.accept(new SourcedToken(new Token(type, Character.toString(codePoint)), line, src, source));
 					break;
-				case PUNCTUATION:
-				case TAB:
+				case PUNCTUATION,TAB:
 					type = Type.TAB;
 					output.accept(new SourcedToken(new Token(type, Character.toString(codePoint)), line, src, source));
 					break;
-				case COMMENT:
-				case STRING:
+				case COMMENT,STRING:
 					buff.appendCodePoint(codePoint);
 					break;
 				case WORD:
@@ -192,42 +189,41 @@ public record Token(Type type, String content) {
 					type = Type.TAB;
 					output.accept(new SourcedToken(new Token(type, Character.toString(codePoint)), line, src, source));
 					break;
+				default:
+					throw invalidTypeException();
 				}
 			} else if(Character.isWhitespace(codePoint)) {
 				switch(type) {
-				case INDENT:
-				case NEWLINE:
+				case INDENT,NEWLINE:
 					type = Type.INDENT;
 					output.accept(new SourcedToken(new Token(type, Character.toString(codePoint)), line, src, source));
 					break;
-				case COMMENT:
-				case STRING:
+				case COMMENT,STRING:
 					buff.appendCodePoint(codePoint);
 					break;
-				case PUNCTUATION:
-				case TAB:
+				case PUNCTUATION,TAB:
 					break;
 				case WORD:
 					output.accept(new SourcedToken(new Token(type, buff.toString()), line, src, source));
 					buff = new StringBuilder();
 					type = Type.TAB;
 					break;
+				default:
+					throw invalidTypeException();
 				}
 			} else if(Character.isLetterOrDigit(codePoint)) {
 				switch(type) {
-				case COMMENT:
-				case STRING:
+				case COMMENT,STRING:
 					buff.appendCodePoint(codePoint);
 					break;
-				case INDENT:
-				case NEWLINE:
-				case PUNCTUATION:
-				case TAB:
+				case INDENT,NEWLINE,PUNCTUATION,TAB:
 					type = Type.WORD;
 					//$FALL-THROUGH$
 				case WORD:
 					buff.appendCodePoint(codePoint);
 					break;
+				default:
+					throw invalidTypeException();
 				}
 			} else {
 				switch(type) {
@@ -246,12 +242,12 @@ public record Token(Type type, String content) {
 							if(type == Type.WORD) type = Type.TAB;
 							return;
 						}
+						break;
+					default:
+						break;
 					}
 					break;
-				case INDENT:
-				case NEWLINE:
-				case PUNCTUATION:
-				case TAB:
+				case INDENT,NEWLINE,PUNCTUATION,TAB:
 					switch(codePoint) {
 					case '[':
 						old = type;
@@ -285,6 +281,8 @@ public record Token(Type type, String content) {
 							type = Type.PUNCTUATION;
 						}
 						break;
+					default:
+						break;
 					}
 					break;
 				case WORD:
@@ -307,10 +305,12 @@ public record Token(Type type, String content) {
 						break;
 					}
 					break;
+				default:
+					throw invalidTypeException();
 				}
 			}
 			if(commentDepth<0) {
-				Logging.log(Severity.FATAL, "Comment depth is negative on char %s.[type = %s; old = %s]\n%s", Character.toString(codePoint), oldType, oldOld, buff);
+				log.error("Comment depth is negative on char {}.[type = {}; old = {}]\n{}", Character.toString(codePoint), oldType, oldOld, buff);
 				System.exit(2);
 			}
 		}
@@ -320,7 +320,8 @@ public record Token(Type type, String content) {
  		private final Consumer<? super SourcedToken> output;
 		private final Runnable oflush;
 		private final List<SourcedToken> buff = new LinkedList<>();
-		private boolean hasComment = false, hasNonWhitespace = false;
+		private boolean hasComment = false;
+		private boolean hasNonWhitespace = false;
 		
 		public CommentRemover(Consumer<? super SourcedToken> output, Runnable oflush) {
 			this.output = output;

@@ -11,7 +11,8 @@ import net.inform7j.transpiler.tokenizer.TokenPattern;
 import net.inform7j.transpiler.tokenizer.TokenString;
 
 public class DeferringAlias extends DeferringImpl implements IAlias<DeferringImpl> {
-	public static final String CAPTURE_ALIAS = "alias", CAPTURE_ORIGINAL = "original";
+	public static final String CAPTURE_ALIAS = "alias";
+	public static final String CAPTURE_ORIGINAL = "original";
 	private static final TokenPattern PATTERN_PREFIX = TokenPattern.quoteIgnoreCase("understand").concat(TokenPattern.Single.STRING.capture(CAPTURE_ALIAS))
 			.concat(TokenPattern.quoteIgnoreCase("and").orIgnoreCase("or").concat(TokenPattern.Single.STRING.capture(CAPTURE_ALIAS)).loop().omittable())
 			.concatIgnoreCase("as");

@@ -12,7 +12,8 @@ import net.inform7j.transpiler.util.LazyLookup;
 
 public class DeferringKind extends DeferringImpl implements IKind {
 	public static final TokenPattern KIND = new TokenPattern.Single(new TokenPredicate(Pattern.compile("kind", Pattern.CASE_INSENSITIVE)));
-	public static final String CAPTURE_NAME = "name", CAPTURE_SUPERKIND = "superkind";
+	public static final String CAPTURE_NAME = "name";
+	public static final String CAPTURE_SUPERKIND = "superkind";
 	public static final Parser<DeferringKind> PARSER = new Parser<>(
 			AN.omittable().concat(WORD_LOOP.capture(CAPTURE_NAME))
 			.concatIgnoreCase("is a kind of")

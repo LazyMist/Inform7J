@@ -7,7 +7,10 @@ import net.inform7j.transpiler.tokenizer.TokenPattern;
 import net.inform7j.transpiler.tokenizer.TokenString;
 
 public class DeferringAction extends DeferringImpl implements IAction {
-	public static final String CAPTURE_NAME = "name", CAPTURE_PRIMARY = "primary", CAPTURE_SECONDARY = "secondary", CAPTURE_REQUIREMENTS = "requirements";
+	public static final String CAPTURE_NAME = "name";
+	public static final String CAPTURE_PRIMARY = "primary";
+	public static final String CAPTURE_SECONDARY = "secondary";
+	public static final String CAPTURE_REQUIREMENTS = "requirements";
 	public static final Parser<DeferringAction> PARSER = new Parser<>(
 			WORD_LOOP.capture(CAPTURE_NAME)
 			.concatIgnoreCase("is an Action")
@@ -29,7 +32,9 @@ public class DeferringAction extends DeferringImpl implements IAction {
 			);
 
 	public final TokenString NAME;
-	public final Optional<TokenString> PRIMARY,SECONDARY,REQUIREMENTS;
+	public final Optional<TokenString> PRIMARY;
+	public final Optional<TokenString> SECONDARY;
+	public final Optional<TokenString> REQUIREMENTS;
 
 	public DeferringAction(DeferringStory story, Source source, TokenString nAME, Optional<TokenString> pRIMARY, Optional<TokenString> sECONDARY, Optional<TokenString> rEQUIREMENTS) {
 		super(story, source);

@@ -5,14 +5,14 @@ import java.util.Optional;
 import net.inform7j.transpiler.tokenizer.TokenString;
 
 public interface ISimpleRule extends IRule {
-	public static enum SimpleTrigger {
+	enum SimpleTrigger {
 		PLAY_START,
 		PLAY_END,
 		POST_IMPORT,
-		EVERY_TURN;
+		EVERY_TURN
 	}
 	
-	public SimpleTrigger trigger();
+	SimpleTrigger trigger();
 	
-	public Optional<TokenString> condition();
+	Optional<TokenString> condition();
 }
