@@ -7,11 +7,11 @@ import java.nio.file.Path;
 import java.util.List;
 
 public interface IStatement {
-	TokenString raw();
-	boolean isBlank();
-	long line();
-	Path src();
-	Source source();
-	String toString(String indent);
-	List<? extends IStatement> blockContents();
+    TokenString raw();
+    boolean isBlank();
+    long line();
+    Path src();
+    Source source();
+    String toString(String indent);
+    List<? extends IStatement> blockContents();
 }

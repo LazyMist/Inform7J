@@ -42,7 +42,7 @@ public record IntakeReader(
     public void run() {
         RawBlockStatement.Builder rootBuilder = new RawBlockStatement.Builder();
         log.debug("Reading: {}", src.toString());
-        try (var buff = Files.newBufferedReader(src)) {
+        try(var buff = Files.newBufferedReader(src)) {
             List<Token.SourcedToken> tokens = new LinkedList<>();
             new Token.Generator(src, source, new Token.CommentRemover(tokens::add)).absorbStream(buff.lines()
                 .map(s -> s + "\n")
@@ -50,18 +50,18 @@ public record IntakeReader(
             List<List<Token.SourcedToken>> lines = insertBufferNewlines(tokens);
             Deque<RawBlockStatement.Builder> builder = new LinkedList<>();
             builder.push(rootBuilder);
-            for (List<Token.SourcedToken> line : lines) {
+            for(List<Token.SourcedToken> line : lines) {
                 int aind = 1;
-                for (Token.SourcedToken t : line) {
-                    if (t.tok().type() != Token.Type.INDENT) break;
+                for(Token.SourcedToken t : line) {
+                    if(t.tok().type() != Token.Type.INDENT) break;
                     aind++;
                 }
-                while (builder.size() < aind) {
+                while(builder.size() < aind) {
                     RawBlockStatement.Builder n = new RawBlockStatement.Builder();
                     Objects.requireNonNull(builder.peek()).accept(n);
                     builder.push(n);
                 }
-                while (builder.size() > aind) {
+                while(builder.size() > aind) {
                     builder.pop();
                 }
                 Objects.requireNonNull(builder.peek()).accept(new RawLineStatement(line.subList(
@@ -69,7 +69,7 @@ public record IntakeReader(
                     line.size()
                 )));
             }
-        } catch (IOException ex) {
+        } catch(IOException ex) {
             Statistics.ERROR_EXCEPTIONS.prepareLog(log)
                 .setCause(ex)
                 .log();
@@ -81,13 +81,13 @@ public record IntakeReader(
         StatementSupplier sup = new StatementSupplier(iter);
         boolean success = true;
         try {
-            while (iter.hasNext() && !prog.isCanceled()) {
+            while(iter.hasNext() && !prog.isCanceled()) {
                 sup.commit();
                 IStatement s = iter.next();
-                if (s instanceof RawLineStatement line) {
+                if(s instanceof RawLineStatement line) {
                     Statistics.LINES.prepareLog(log).log("Parsing line: {}", line.raw());
                     success = processRootLine(line, sup);
-                } else if (!s.isBlank() && success) {
+                } else if(!s.isBlank() && success) {
                     String msg = String.format(
                         "Unprocessed indentation block in %s @%d:%n%s",
                         s.src(),
@@ -109,16 +109,16 @@ public record IntakeReader(
         List<List<Token.SourcedToken>> lines = new LinkedList<>();
         List<Token.SourcedToken> line = new LinkedList<>();
         long lastLine = 0;
-        for (Token.SourcedToken t : tokens) {
+        for(Token.SourcedToken t : tokens) {
             lastLine = t.line();
             line.add(t);
-            if (t.tok().type() == Token.Type.NEWLINE) {
+            if(t.tok().type() == Token.Type.NEWLINE) {
                 lastLine++;
                 lines.add(line);
                 line = new LinkedList<>();
             }
         }
-        if (line.isEmpty()) {
+        if(line.isEmpty()) {
             line.add(new Token.SourcedToken(
                 new Token(Token.Type.NEWLINE, "\n"),
                 lastLine,
@@ -201,12 +201,12 @@ public record IntakeReader(
     //Pattern.compile("^Does the player mean (?<input>.+?): it is (?<likelyhood>.+?)\\.\\s*$", Pattern.CASE_INSENSITIVE)
     
     public static boolean tailMatch(IStatement st, TokenPattern pat, boolean contained) {
-        if (st instanceof RawLineStatement l) {
+        if(st instanceof RawLineStatement l) {
             return pat.matches(l.raw()).findFirst().isPresent();
-        } else if (st instanceof RawBlockStatement b) {
+        } else if(st instanceof RawBlockStatement b) {
             boolean ret = false;
-            for (IStatement s : b.blockContents()) {
-                if (contained && ret) log.warn("Potential Raw block end in the middle of an indentation block");
+            for(IStatement s : b.blockContents()) {
+                if(contained && ret) log.warn("Potential Raw block end in the middle of an indentation block");
                 ret = tailMatch(s, pat, true);
             }
         }
@@ -216,17 +216,17 @@ public record IntakeReader(
     public boolean processRootLine(final RawLineStatement line, final StatementSupplier sup) {
         TokenString lstr = new TokenString(line.raw().stream().filter(TokenPredicate.IS_WHITESPACE.negate()));
         Optional<TokenPattern.Result> r = INCLUDE_RAW.matches(lstr).findFirst();
-        if (r.isPresent()) {
-            while (true) {
+        if(r.isPresent()) {
+            while(true) {
                 Optional<? extends IStatement> opt = sup.getNextOptional(IStatement.class);
-                if (opt.isEmpty()) {
+                if(opt.isEmpty()) {
                     throw new UnknownLineException("Unresolvable Raw include statement: " + line.src() + "@" + line.line());
                 }
-                if (tailMatch(opt.get(), INCLUDE_RAW_END, true)) return true;
+                if(tailMatch(opt.get(), INCLUDE_RAW_END, true)) return true;
             }
         }
         r = INCLUDE.matches(lstr).findFirst();
-        if (r.isPresent()) {
+        if(r.isPresent()) {
             final TokenPattern.Result res = r.get();
             final TokenString auth = res.cap(CAPTURE_AUTHOR);
             final TokenString ex = res.cap(CAPTURE_EXT);
@@ -234,33 +234,36 @@ public record IntakeReader(
                 .asMatchPredicate();
             Predicate<String> ext = Pattern.compile(Token.toPattern(ex) + "\\.i7x", Pattern.CASE_INSENSITIVE)
                 .asMatchPredicate();
-            if (explored.computeIfAbsent(auth.toString(), s -> new HashSet<>()).add(ex.toString())) {
-                try (
+            if(explored.computeIfAbsent(auth.toString(), s -> new HashSet<>()).add(ex.toString())) {
+                try(
                     Stream<Path> str = Files.find(
                         extensions,
                         2,
-                        (Path p, BasicFileAttributes a) -> ext.test(p.getFileName().toString()) && author.test(p.getParent()
+                        (Path p, BasicFileAttributes a) -> ext.test(p.getFileName()
+                            .toString()) && author.test(p.getParent()
                             .getFileName()
                             .toString()),
                         FileVisitOption.FOLLOW_LINKS
                     )
                 ) {
                     Path p = str.findAny().orElseThrow();
-                    IntakeReader rdr = new IntakeReader(trg,
+                    IntakeReader rdr = new IntakeReader(
+                        trg,
                         p,
                         new Source.Extension(p.getParent().getFileName().toString(), p.getFileName().toString()),
                         extensions,
                         explored,
-                        stopOnError);
+                        stopOnError
+                    );
                     rdr.run();
-                } catch (IOException exc) {
+                } catch(IOException exc) {
                     Statistics.MISSING_FILES.prepareLog(log)
                         .setCause(exc)
                         .log();
-                } catch (NoSuchElementException exc) {
+                } catch(NoSuchElementException exc) {
                     Statistics.MISSING_FILES.prepareLog(log).log("Cannot locate {} by {} in the extensions.", ex, auth);
-                } catch (RuntimeException exc) {
-                    if (stopOnError) throw exc;
+                } catch(RuntimeException exc) {
+                    if(stopOnError) throw exc;
                     Statistics.INCOMPLETE_INCLUDE.prepareLog(log)
                         .setCause(exc)
                         .log();
@@ -269,7 +272,7 @@ public record IntakeReader(
             return true;
         }
         r = SECTION.matches(lstr).findFirst();
-        if (r.isPresent()) {
+        if(r.isPresent()) {
             final TokenPattern.Result res = r.get();
             log.info(
                 "Parsing {} \"{}\" of {} @{}",
@@ -281,10 +284,10 @@ public record IntakeReader(
             return true;
         }
         r = VERSION.matches(lstr).findFirst();
-        if (r.isPresent()) {
+        if(r.isPresent()) {
             final TokenPattern.Result res = r.get();
             TokenString ext = res.cap(CAPTURE_EXT);
-            if (source instanceof Source.Extension e) e.tokenName().set(ext);
+            if(source instanceof Source.Extension e) e.tokenName().set(ext);
             log.info(
                 "Parsing Version {} of {} by {} @{}",
                 res.capOpt(CAPTURE_VERSION).map(TokenString::toString).orElse("N/A"),
@@ -292,12 +295,12 @@ public record IntakeReader(
                 res.cap(CAPTURE_AUTHOR),
                 line.line()
             );
-            while (true) {
+            while(true) {
                 Optional<RawLineStatement> opt = sup.getNextOptional(RawLineStatement.class);
-                if (opt.isEmpty()) break;
+                if(opt.isEmpty()) break;
                 RawLineStatement rline = opt.get();
-                if (!rline.isBlank()) {
-                    if (COMMENTSTRING.matches(rline.raw()).findFirst().isPresent()) {
+                if(!rline.isBlank()) {
+                    if(COMMENTSTRING.matches(rline.raw()).findFirst().isPresent()) {
                         log.info("{}", rline.raw());
                     } else {
                         sup.reverse();
@@ -308,7 +311,7 @@ public record IntakeReader(
             return true;
         }
         r = BOOK_START.matches(lstr).findFirst();
-        if (r.isPresent()) {
+        if(r.isPresent()) {
             final TokenPattern.Result res = r.get();
             log.info(
                 "Parsing {} by {} @{}",
@@ -316,12 +319,12 @@ public record IntakeReader(
                 res.cap(CAPTURE_AUTHOR),
                 line.line()
             );
-            while (true) {
+            while(true) {
                 Optional<RawLineStatement> opt = sup.getNextOptional(RawLineStatement.class);
-                if (opt.isEmpty()) break;
+                if(opt.isEmpty()) break;
                 RawLineStatement rline = opt.get();
-                if (!rline.isBlank()) {
-                    if (COMMENTSTRING.matches(rline.raw()).findFirst().isPresent()) {
+                if(!rline.isBlank()) {
+                    if(COMMENTSTRING.matches(rline.raw()).findFirst().isPresent()) {
                         log.info("{}", rline.raw());
                     } else {
                         sup.reverse();
@@ -332,7 +335,7 @@ public record IntakeReader(
             return true;
         }
         r = IGNORE.matches(lstr).findFirst();
-        if (r.isPresent()) {
+        if(r.isPresent()) {
             log.info(
                 "Ignoring irrelevant technical line {} in {}: {}",
                 line.line(),
@@ -342,7 +345,7 @@ public record IntakeReader(
             return true;
         }
         r = IGNORE_BLOCK.matches(lstr).findFirst();
-        if (r.isPresent()) {
+        if(r.isPresent()) {
             log.info(
                 "Ignoring irrelevant technical block in {} @ {}: {}\n{}",
                 line.src(),
@@ -353,16 +356,16 @@ public record IntakeReader(
             return true;
         }
         r = END.matches(lstr).findFirst();
-        if (r.isPresent()) {
+        if(r.isPresent()) {
             TokenString ext = r.get().cap(CAPTURE_EXT);
             log.info("Finished parsing {}", ext);
-            if (source instanceof Source.Extension ex && ex.tokenName().get().stream().noneMatch(ext::equals)) {
+            if(source instanceof Source.Extension ex && ex.tokenName().get().stream().noneMatch(ext::equals)) {
                 log.warn("Unrecognized end within extension: {}", ext);
             }
             return true;
         }
         r = INPUT_LIKELYHOOD.matches(lstr).findFirst();
-        if (r.isPresent()) {
+        if(r.isPresent()) {
             final TokenPattern.Result res = r.get();
             log.info(
                 "Likelyhood assertion: {} is {}",
@@ -371,29 +374,34 @@ public record IntakeReader(
             );
             return true;
         }
-        if (lstr.stream().anyMatch(TokenPredicate.IS_WHITESPACE.negate())) {
+        if(lstr.stream().anyMatch(TokenPredicate.IS_WHITESPACE.negate())) {
             boolean change;
             do {
                 change = false;
-                for (DeferringStory.CombinedParser<?> p : DeferringStory.CPARSERS) {
+                for(DeferringStory.CombinedParser<?> p : DeferringStory.CPARSERS) {
                     TokenString n = lstr;
                     try {
                         n = p.cparse(trg, line, sup, lstr);
-                    } catch (RuntimeException ex) {
+                    } catch(RuntimeException ex) {
                         Statistics.ERROR_EXCEPTIONS.prepareLog(log)
                             .setCause(ex)
                             .log();
                     }
-                    if (!n.equals(lstr)) {
+                    if(!n.equals(lstr)) {
                         lstr = n;
                         change = true;
                         break;
                     }
                 }
-            } while (change && !lstr.stream().allMatch(TokenPredicate.IS_WHITESPACE));
+            } while(change && !lstr.stream().allMatch(TokenPredicate.IS_WHITESPACE));
         }
-        if (lstr.stream().anyMatch(TokenPredicate.IS_WHITESPACE.negate())) {
-            Statistics.UNKNOWN_LINES.prepareLog(log).log("Unable to process line {} in {}: {}", line.line(), line.src(), lstr);
+        if(lstr.stream().anyMatch(TokenPredicate.IS_WHITESPACE.negate())) {
+            Statistics.UNKNOWN_LINES.prepareLog(log).log(
+                "Unable to process line {} in {}: {}",
+                line.line(),
+                line.src(),
+                lstr
+            );
             throw new UnknownLineException("Unknown line " + line.line() + " in " + line.src() + ": " + lstr);
         }
         return true;

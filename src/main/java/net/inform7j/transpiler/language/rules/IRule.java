@@ -7,6 +7,6 @@ import net.inform7j.transpiler.language.IStory.Element;
 import net.inform7j.transpiler.tokenizer.TokenString;
 
 public interface IRule extends Element {
-	IStatement body();
-	Optional<TokenString> name();
+    IStatement body();
+    Optional<TokenString> name();
 }

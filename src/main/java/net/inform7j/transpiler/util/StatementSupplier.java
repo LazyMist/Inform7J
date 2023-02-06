@@ -19,8 +19,11 @@ public class StatementSupplier {
     }
     
     public <T extends IStatement> Optional<T> getNextOptional(Class<T> clazz, boolean important) {
-        if (!iter.hasNext()) {
-            if (important) Statistics.BAD_BODY_STATEMENTS.prepareLog(log).log("Statement requested when none are available.");
+        if(!iter.hasNext()) {
+            if(important) {
+                Statistics.BAD_BODY_STATEMENTS.prepareLog(log).log(
+                    "Statement requested when none are available.");
+            }
             return Optional.empty();
         }
         IStatement st = iter.next();
@@ -28,8 +31,8 @@ public class StatementSupplier {
             Optional<T> ret = Optional.of(clazz.cast(st));
             advance++;
             return ret;
-        } catch (ClassCastException ex) {
-            if (important) {
+        } catch(ClassCastException ex) {
+            if(important) {
                 Statistics.BAD_BODY_STATEMENTS.prepareLog(log).log(
                     "Tried to get {}, got {} @{} in {}",
                     clazz.getCanonicalName(),
@@ -37,9 +40,9 @@ public class StatementSupplier {
                     st.line(),
                     st.src()
                 );
-                if (st instanceof RawLineStatement rl) {
-                   log.warn(rl.toString(""));
-                } else if (st instanceof RawBlockStatement rb) log.warn(rb.toString(""));
+                if(st instanceof RawLineStatement rl) {
+                    log.warn(rl.toString(""));
+                } else if(st instanceof RawBlockStatement rb) log.warn(rb.toString(""));
             }
             iter.previous();
             return Optional.empty();
@@ -55,7 +58,7 @@ public class StatementSupplier {
     }
     
     public void reverse() throws IllegalStateException {
-        if (advance == 0) throw new IllegalStateException("Cannot reverse at the beginning");
+        if(advance == 0) throw new IllegalStateException("Cannot reverse at the beginning");
         iter.previous();
         advance--;
     }
