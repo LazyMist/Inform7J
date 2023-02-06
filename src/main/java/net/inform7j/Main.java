@@ -18,8 +18,7 @@ import java.util.HashSet;
 public class Main {
 	public enum ParseState {
 		CMD,
-		EXT_PATH,
-		LOG_SEVERITY
+		EXT_PATH
 	}
 
 	public static void main(String[] args) {
@@ -33,22 +32,16 @@ public class Main {
 				switch(s) {
 				case "--help":
 					System.out.println("""
-							Usage: [options...] [input-file]
-							Options:
-							--help				Show this message.
-							--ext [path]		Set the path to the inform7 extensions folder.
-							Default: /usr/share/gnome-inform7/Extensions/
-							--log [severity]	Set the minimum severity of logged messages.
-							Severities are DEBUG, INFO, WARN, ERROR, FATAL
-							Default: WARN
-							--stopOnError		Stops the compiler when an error occurs.
-							""");
+                                       Usage: [options...] [input-file]
+                                       Options:
+                                       --help				Show this message.
+                                       --ext [path]			Set the path to the inform7 extensions folder.
+                                       Default: /usr/share/gnome-inform7/Extensions/
+                                       --stopOnError		Stops the compiler when an error occurs.
+                                       """);
 					return;
 				case "--ext":
 					state = ParseState.EXT_PATH;
-					break;
-				case "--log":
-					state = ParseState.LOG_SEVERITY;
 					break;
 				case "--stopOnError":
 					stopOnError = true;
@@ -64,10 +57,6 @@ public class Main {
 			case EXT_PATH:
 				if(ext != null) log.warn("Extension folder path specified multiple times.");
 				ext = Paths.get(s);
-				state = ParseState.CMD;
-				break;
-			case LOG_SEVERITY:
-				
 				state = ParseState.CMD;
 				break;
 			}
