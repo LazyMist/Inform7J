@@ -92,7 +92,7 @@ public abstract class DeferringImpl implements IStory.Element {
     
     public record Parser<T extends DeferringImpl>(
         TokenPattern pattern,
-        Function<? super ParseContext, ? extends T> factory
+        Function<? super ParseContext, T> factory
     ) {
     }
 }

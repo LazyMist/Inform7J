@@ -20,8 +20,9 @@ public sealed class DeferringActionRule extends DeferringRule implements IAction
     public static Function<? super ParseContext, ? extends DeferringActionRule> factoryWithTrigger(ActionTrigger trigger) {
         return ctx -> new DeferringActionRule(ctx, DeferringFunction.getNextBody(ctx.supplier()), trigger);
     }
-    public static final String CAPTURE_ACTION = "action", CAPTURE_TARGET = "vname";
-    public static final List<Parser<DeferringActionRule>> PARSERS = Collections.unmodifiableList(Arrays.asList(
+    public static final String CAPTURE_ACTION = "action";
+    public static final String CAPTURE_TARGET = "vname";
+    public static final List<Parser<? extends DeferringActionRule>> PARSERS = Collections.unmodifiableList(Arrays.asList(
         new Parser<>(
             TokenPattern.quoteIgnoreCase("Carry out")
                 .concat(NOT_ENDMARKER_LOOP.capture(CAPTURE_ACTION))
@@ -58,36 +59,36 @@ public sealed class DeferringActionRule extends DeferringRule implements IAction
             factoryWithTrigger(ActionTrigger.CHECK))
     ));
     
-    public final ActionTrigger TRIGGER;
-    public final TokenString ACTION;
+    public final ActionTrigger trigger;
+    public final TokenString action;
     
     public DeferringActionRule(
         DeferringStory story,
         Source source,
-        IStatement bODY,
-        ActionTrigger tRIGGER,
-        TokenString aCTION,
-        Optional<TokenString> nAME
+        IStatement body,
+        ActionTrigger trigger,
+        TokenString action,
+        Optional<TokenString> name
     ) {
-        super(story, source, nAME, bODY);
-        TRIGGER = tRIGGER;
-        ACTION = aCTION;
+        super(story, source, name, body);
+        this.trigger = trigger;
+        this.action = action;
     }
     
     public DeferringActionRule(ParseContext ctx, IStatement body, ActionTrigger trigger) {
         super(ctx, body);
-        TRIGGER = trigger;
-        ACTION = ctx.result().cap(CAPTURE_ACTION);
+        this.trigger = trigger;
+        this.action = ctx.result().cap(CAPTURE_ACTION);
     }
     
     @Override
     public ActionTrigger trigger() {
-        return TRIGGER;
+        return trigger;
     }
     
     @Override
     public DeferringAction action() {
-        return story.getAction(ACTION);
+        return story.getAction(action);
     }
     
 }

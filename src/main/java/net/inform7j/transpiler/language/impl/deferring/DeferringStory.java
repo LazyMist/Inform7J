@@ -9,15 +9,10 @@ import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import net.inform7j.transpiler.Statistics;
 import net.inform7j.transpiler.language.*;
-import net.inform7j.transpiler.util.StatementSupplier;
 import net.inform7j.transpiler.language.IStory;
 import net.inform7j.transpiler.language.ITable;
-import net.inform7j.transpiler.language.impl.deferring.DeferringImpl.ParseContext;
-import net.inform7j.transpiler.language.impl.deferring.DeferringImpl.Parser;
 import net.inform7j.transpiler.language.impl.deferring.DeferringTable.DeferringContinuation;
 import net.inform7j.transpiler.language.impl.deferring.rules.DeferringActionRule;
-import net.inform7j.transpiler.language.impl.deferring.rules.DeferringConditionedActionRule;
-import net.inform7j.transpiler.language.impl.deferring.rules.DeferringNamedRule;
 import net.inform7j.transpiler.language.impl.deferring.rules.DeferringRule;
 import net.inform7j.transpiler.language.impl.deferring.rules.DeferringSimpleRule;
 import net.inform7j.transpiler.language.rules.ISimpleRule;
@@ -31,85 +26,6 @@ import net.inform7j.transpiler.util.MappedList;
 
 @Slf4j
 public class DeferringStory implements IStory {
-    public record CombinedParser<T extends DeferringImpl>(
-        Parser<T> parser,
-        BiFunction<? super DeferringStory, ? super TokenPattern, ? extends TokenPattern> patMap,
-        BiConsumer<? super DeferringStory, ? super T> consumer
-    ) {
-        public TokenString cparse(DeferringStory story, IStatement source, StatementSupplier sup, TokenString src) {
-            //Logging.log(Severity.DEBUG, "Parsing %s\nwith %s", src, parser.pattern().pattern());
-            Optional<TokenPattern.Result> results = patMap.apply(story, parser.pattern()).matches(src).findFirst();
-            if(results.isEmpty()) return src;
-            //Logging.log(Severity.DEBUG, "Parsing successful");
-            consumer.accept(story, parser.factory().apply(new ParseContext(story, source, results.get(), sup)));
-            return src.substring(results.get().matchLength());
-        }
-        
-        public static <T extends DeferringImpl> Function<Parser<T>, CombinedParser<T>> bind(
-            BiFunction<? super DeferringStory, ? super TokenPattern, ? extends TokenPattern> map,
-            BiConsumer<? super DeferringStory, ? super T> con
-        ) {
-            return p -> new CombinedParser<>(p, map, con);
-        }
-    }
-    
-    public static final Collection<CombinedParser<?>> CPARSERS;
-    static {
-        List<CombinedParser<?>> l = new LinkedList<>();
-        l.add(new CombinedParser<>(DeferringKind.PARSER, DeferringStory::replace, DeferringStory::addKind));
-        DeferringEnum.PARSERS.stream()
-            .map(CombinedParser.bind(DeferringStory::replace, DeferringStory::addEnum))
-            .forEachOrdered(l::add);
-        DeferringProperty.PARSERS.stream().map(CombinedParser.bind(
-            DeferringStory::replace,
-            DeferringStory::addProperty
-        )).forEachOrdered(l::add);
-        DeferringObject.PARSERS.stream()
-            .map(CombinedParser.bind(DeferringStory::replace, DeferringStory::addObject))
-            .forEachOrdered(l::add);
-        DeferringPredicate.PARSERS.stream().map(CombinedParser.bind(
-            DeferringStory::replace,
-            DeferringStory::addPredicate
-        )).forEachOrdered(l::add);
-        DeferringFunction.PARSERS.stream().map(CombinedParser.bind(
-            DeferringStory::replace,
-            DeferringStory::addFunction
-        )).forEachOrdered(l::add);
-        DeferringPrint.PARSERS.stream()
-            .map(CombinedParser.bind(DeferringStory::replace, DeferringStory::addPrint))
-            .forEachOrdered(l::add);
-        DeferringRoutine.PARSERS.stream()
-            .map(CombinedParser.bind(DeferringStory::replace, DeferringStory::addRoutine))
-            .forEachOrdered(l::add);
-        l.add(new CombinedParser<>(DeferringAction.PARSER, DeferringStory::replace, DeferringStory::addAction));
-        l.add(new CombinedParser<>(
-            DeferringContinuation.PARSER,
-            DeferringStory::replace,
-            DeferringStory::addContinuation
-        ));
-        l.add(new CombinedParser<>(DeferringTable.PARSER, DeferringStory::replace, DeferringStory::addTable));
-        l.add(new CombinedParser<>(DeferringAlias.PARSER, DeferringStory::replace, DeferringStory::addAlias));
-        DeferringConditionedActionRule.PARSERS.stream().map(CombinedParser.bind(
-            DeferringStory::replace,
-            DeferringStory::addRule
-        )).forEachOrdered(l::add);
-        l.add(new CombinedParser<>(DeferringNamedRule.PARSER, DeferringStory::replace, DeferringStory::addRule));
-        DeferringActionRule.PARSERS.stream()
-            .map(CombinedParser.bind(DeferringStory::replace, DeferringStory::addRule))
-            .forEachOrdered(l::add);
-        DeferringSimpleRule.PARSERS.stream()
-            .map(CombinedParser.bind(DeferringStory::replace, DeferringStory::addRule))
-            .forEachOrdered(l::add);
-        DeferringDefault.PARSERS.stream()
-            .map(CombinedParser.bind(DeferringStory::replace, DeferringStory::addDefault))
-            .forEachOrdered(l::add);
-        DeferringValue.PARSERS.stream()
-            .map(CombinedParser.bind(DeferringStory::replace, DeferringStory::addValue))
-            .forEachOrdered(l::add);
-        
-        CPARSERS = Collections.unmodifiableCollection(l);
-    }
-    
     private final Map<TokenString, DeferringKind> kinds = new HashMap<>();
     public static final String KIND_NAME_REPLACEMENT = "kind_names";
     private final EnumMap<BaseKind, DeferringKind> basekinds = new EnumMap<>(BaseKind.class);
@@ -263,7 +179,7 @@ public class DeferringStory implements IStory {
     private final Map<TokenString, DeferringRule> namedRules = new HashMap<>();
     private final Map<ISimpleRule.SimpleTrigger, List<DeferringSimpleRule>> simpleRules = new EnumMap<>(ISimpleRule.SimpleTrigger.class);
     
-    private TokenPattern replace(TokenPattern pat) {
+    public TokenPattern replace(TokenPattern pat) {
         return pat.replace(s -> switch(s) {
             case KIND_NAME_REPLACEMENT -> kindNames;
             case ACTION_NAME_REPLACEMENT -> actionNames;
@@ -611,7 +527,7 @@ public class DeferringStory implements IStory {
         boolean change = false;
         boolean pchange = false;
         if(def instanceof DeferringActionRule act) {
-            change = actionRules.computeIfAbsent(act.ACTION, s -> new LinkedList<>()).add(act);
+            change = actionRules.computeIfAbsent(act.action, s -> new LinkedList<>()).add(act);
             pchange = true;
         }
         if(def instanceof DeferringSimpleRule smp) {

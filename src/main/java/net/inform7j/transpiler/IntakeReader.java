@@ -2,6 +2,7 @@ package net.inform7j.transpiler;
 
 import lombok.extern.slf4j.Slf4j;
 import net.inform7j.transpiler.language.IStatement;
+import net.inform7j.transpiler.parser.CombinedParser;
 import net.inform7j.transpiler.util.StatementSupplier;
 import net.inform7j.transpiler.language.impl.deferring.DeferringStory;
 import net.inform7j.transpiler.language.impl.deferring.RawBlockStatement;
@@ -374,11 +375,17 @@ public record IntakeReader(
             );
             return true;
         }
+        final Iterable<? extends CombinedParser> parsers = ServiceLoader.load(CombinedParser.Provider.class)
+            .stream()
+            .map(ServiceLoader.Provider::get)
+            .flatMap(CombinedParser.Provider::get)
+            .sorted(Comparator.comparingInt(CombinedParser::order))
+            .toList();
         if(lstr.stream().anyMatch(TokenPredicate.IS_WHITESPACE.negate())) {
             boolean change;
             do {
                 change = false;
-                for(DeferringStory.CombinedParser<?> p : DeferringStory.CPARSERS) {
+                for(CombinedParser p : parsers) {
                     TokenString n = lstr;
                     try {
                         n = p.cparse(trg, line, sup, lstr);
