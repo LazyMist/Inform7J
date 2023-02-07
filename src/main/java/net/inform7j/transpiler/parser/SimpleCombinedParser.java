@@ -3,6 +3,7 @@ package net.inform7j.transpiler.parser;
 import net.inform7j.transpiler.language.IStatement;
 import net.inform7j.transpiler.language.impl.deferring.DeferringImpl;
 import net.inform7j.transpiler.language.impl.deferring.DeferringStory;
+import net.inform7j.transpiler.tokenizer.Result;
 import net.inform7j.transpiler.tokenizer.TokenPattern;
 import net.inform7j.transpiler.tokenizer.TokenString;
 import net.inform7j.transpiler.util.StatementSupplier;
@@ -29,7 +30,7 @@ public record SimpleCombinedParser<T extends DeferringImpl>(
     }
     public TokenString cparse(DeferringStory story, IStatement source, StatementSupplier sup, TokenString src) {
         //Logging.log(Severity.DEBUG, "Parsing %s\nwith %s", src, parser.pattern().pattern());
-        Optional<TokenPattern.Result> results = patMap.apply(story, pattern).matches(src).findFirst();
+        Optional<Result> results = patMap.apply(story, pattern).matches(src).findFirst();
         if(results.isEmpty()) return src;
         //Logging.log(Severity.DEBUG, "Parsing successful");
         consumer.accept(

@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.inform7j.transpiler.Source;
 import net.inform7j.transpiler.IntakeReader;
 import net.inform7j.transpiler.language.IStatement;
+import net.inform7j.transpiler.tokenizer.pattern.Single;
 import net.inform7j.transpiler.util.StatementSupplier;
 import net.inform7j.transpiler.tokenizer.TokenPattern;
 import net.inform7j.transpiler.tokenizer.TokenPredicate;
@@ -37,7 +38,7 @@ public class DeferringPrint extends DeferringRoutine {
             TO_SAY
                 .concat(PARAM_GLOB.loop())
                 .concat(":(-")
-                .concat(new TokenPattern.Single(TokenPredicate.NEWLINE.negate()).loop())
+                .concat(new Single(TokenPredicate.NEWLINE.negate()).loop())
                 .concat("-)\n")
             /*Pattern.compile("^to say (?<nameParams>"+DeferringFunction.PARAM_GLOB+"+): \\(-.*?-\\)\\.?\\s*$", Pattern.CASE_INSENSITIVE)*/,
             DeferringPrint::RawClosed

@@ -7,9 +7,7 @@ import java.util.List;
 import net.inform7j.transpiler.Source;
 import net.inform7j.transpiler.language.IObject;
 import net.inform7j.transpiler.language.IStory.BaseKind;
-import net.inform7j.transpiler.tokenizer.Token;
-import net.inform7j.transpiler.tokenizer.TokenPattern;
-import net.inform7j.transpiler.tokenizer.TokenString;
+import net.inform7j.transpiler.tokenizer.*;
 import net.inform7j.transpiler.util.LazyLookup;
 
 public class DeferringObject extends DeferringImpl implements IObject {
@@ -21,17 +19,17 @@ public class DeferringObject extends DeferringImpl implements IObject {
             TokenPattern.quoteIgnoreCase("the").omittable()
                 .concat(IDENTIFIER_LOOP.capture(CAPTURE_NAME))
                 .concat(IS).concat(AN)
-                .concat(new TokenPattern.Replacement(DeferringStory.KIND_NAME_REPLACEMENT, false).capture(CAPTURE_TYPE))
+                .concat(new Replacement(DeferringStory.KIND_NAME_REPLACEMENT, false).capture(CAPTURE_TYPE))
                 .concat(TokenPattern.quoteIgnoreCase("that varies").omittable())
                 .concat(ENDMARKER)
             /*Pattern.compile("^(?<name>.+?) is an? (?<type>.+?)(?> that varies)?\\.", Pattern.CASE_INSENSITIVE)*/,
             DeferringObject::new),
         new Parser<>(
             TokenPattern.quoteIgnoreCase("the").omittable()
-                .concat(new TokenPattern.Replacement(DeferringStory.OBJECT_NAME_REPLACEMENT, false).capture(
+                .concat(new Replacement(DeferringStory.OBJECT_NAME_REPLACEMENT, false).capture(
                     CAPTURE_OWNER))
                 .concat(HAS).concat(AN.omittable())
-                .concat(new TokenPattern.Replacement(DeferringStory.KIND_NAME_REPLACEMENT, false).capture(CAPTURE_TYPE))
+                .concat(new Replacement(DeferringStory.KIND_NAME_REPLACEMENT, false).capture(CAPTURE_TYPE))
                 .concat("called")
                 .concat(TokenPattern.quoteIgnoreCase("the").omittable())
                 .concat(IDENTIFIER_LOOP.capture(CAPTURE_NAME))
@@ -40,7 +38,7 @@ public class DeferringObject extends DeferringImpl implements IObject {
             DeferringObject::new),
         new Parser<>(
             TokenPattern.quoteIgnoreCase("the").omittable()
-                .concat(new TokenPattern.Replacement(DeferringStory.OBJECT_NAME_REPLACEMENT, false).capture(
+                .concat(new Replacement(DeferringStory.OBJECT_NAME_REPLACEMENT, false).capture(
                     CAPTURE_OWNER))
                 .concatIgnoreCase("can be").concat(TokenPattern.quoteIgnoreCase("either").lookahead(true))
                 .concat(IDENTIFIER_LOOP.capture(CAPTURE_NAME))
@@ -62,7 +60,7 @@ public class DeferringObject extends DeferringImpl implements IObject {
     }
     protected DeferringObject(ParseContext ctx, LazyLookup<TokenString, ? extends DeferringKind> type) {
         super(ctx);
-        final TokenPattern.Result m = ctx.result();
+        final Result m = ctx.result();
         TokenString nam = m.cap(CAPTURE_NAME);
         nam = nam.concat(m.capOpt(CAPTURE_OWNER)
             .map(o -> new TokenString(new Token(Token.Type.WORD, "of")).concat(o))

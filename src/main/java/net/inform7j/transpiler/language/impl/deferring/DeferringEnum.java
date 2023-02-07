@@ -8,6 +8,8 @@ import java.util.stream.Stream;
 
 import net.inform7j.transpiler.Source;
 import net.inform7j.transpiler.language.IEnum;
+import net.inform7j.transpiler.tokenizer.Replacement;
+import net.inform7j.transpiler.tokenizer.Result;
 import net.inform7j.transpiler.tokenizer.TokenPattern;
 import net.inform7j.transpiler.tokenizer.TokenString;
 
@@ -28,7 +30,7 @@ public class DeferringEnum extends DeferringImpl implements IEnum {
             /*Pattern.compile("The (?<name>.+?)s are (?<values>.+?)\\.\\s*+", Pattern.CASE_INSENSITIVE)*/,
             DeferringEnum::Kind),
         new Parser<>(
-            AN.concat(new TokenPattern.Replacement(DeferringStory.KIND_NAME_REPLACEMENT, false).capture(CAPTURE_NAME))
+            AN.concat(new Replacement(DeferringStory.KIND_NAME_REPLACEMENT, false).capture(CAPTURE_NAME))
                 .concat(TokenPattern.quoteIgnoreCase("can be").orIgnoreCase("is either"))
                 .concat(WORD_LOOP.capture(CAPTURE_VALUES))
                 .concat(
@@ -73,7 +75,7 @@ public class DeferringEnum extends DeferringImpl implements IEnum {
     public DeferringEnum(ParseContext ctx, Category category) {
         super(ctx);
         CATEGORY = category;
-        final TokenPattern.Result r = ctx.result();
+        final Result r = ctx.result();
         NAME = r.cap(CAPTURE_NAME);
         VALUES = Collections.unmodifiableList(new ArrayList<>(r.capMulti(CAPTURE_VALUES)));
     }

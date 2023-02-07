@@ -11,17 +11,15 @@ import net.inform7j.transpiler.IntakeReader;
 import net.inform7j.transpiler.language.IFunction;
 import net.inform7j.transpiler.language.IKind;
 import net.inform7j.transpiler.language.IStatement;
+import net.inform7j.transpiler.tokenizer.*;
+import net.inform7j.transpiler.tokenizer.pattern.End;
+import net.inform7j.transpiler.tokenizer.pattern.Single;
 import net.inform7j.transpiler.util.StatementSupplier;
 import net.inform7j.transpiler.language.IStory.BaseKind;
-import net.inform7j.transpiler.tokenizer.Token;
-import net.inform7j.transpiler.tokenizer.TokenPattern;
-import net.inform7j.transpiler.tokenizer.TokenPattern.Result;
-import net.inform7j.transpiler.tokenizer.TokenPredicate;
-import net.inform7j.transpiler.tokenizer.TokenString;
 
 @Slf4j
 public class DeferringFunction extends DeferringImpl implements IFunction {
-    public static record DeferredParameter(DeferringStory story, Source source, TokenString name, TokenString kindName)
+    public record DeferredParameter(DeferringStory story, Source source, TokenString name, TokenString kindName)
         implements ParameterElement {
         public static final String CAPTURE_TYPE = "type";
         public static final TokenPattern PATTERN = TokenPattern.quote("(")
@@ -46,9 +44,9 @@ public class DeferringFunction extends DeferringImpl implements IFunction {
     protected static Stream<SignatureElement> parseSignatures(ParseContext ctx, List<TokenString> names) {
         Stream.Builder<SignatureElement> name = Stream.builder();
         for(TokenString e : names) {
-            Optional<Result> results = DeferredParameter.PATTERN.concat(TokenPattern.END).matches(e).findFirst();
+            Optional<Result> results = DeferredParameter.PATTERN.concat(End.PATTERN).matches(e).findFirst();
 			if(results.isEmpty()) {
-				results = NAME_GLOB.concat(TokenPattern.END).matches(e).findFirst();
+				results = NAME_GLOB.concat(End.PATTERN).matches(e).findFirst();
 				if(results.isEmpty()) throw new RuntimeException("Not a nameElement");
 				name.accept(new NameElement(results.get().capMulti(CAPTURE_NAME).stream()
 					.map(l -> l.stream().map(Token::content).collect(Collectors.joining(" ")))
@@ -67,15 +65,15 @@ public class DeferringFunction extends DeferringImpl implements IFunction {
     }
     
     public static final String CAPTURE_NAME = "name";
-    public static final TokenPattern NAME_GLOB = TokenPattern.Single.WORD.capture(CAPTURE_NAME)
+    public static final TokenPattern NAME_GLOB = Single.WORD.capture(CAPTURE_NAME)
         .concat(TokenPattern.quote("/")
-            .concat(TokenPattern.Single.WORD.or("--").capture(CAPTURE_NAME))
+            .concat(Single.WORD.or("--").capture(CAPTURE_NAME))
             .loop()
             .omittable())
-        .or(TokenPattern.Single.PUNCTUATION.capture(CAPTURE_NAME));
+        .or(Single.PUNCTUATION.capture(CAPTURE_NAME));
     public static final TokenPattern PARAM_GLOB = NAME_GLOB.or(DeferredParameter.PATTERN).clearCapture().capture(
         CAPTURE_NAME);
-    public static final TokenPattern WHICH = new TokenPattern.Single(new TokenPredicate(Pattern.compile(
+    public static final TokenPattern WHICH = new Single(new TokenPredicate(Pattern.compile(
         "which|what",
         Pattern.CASE_INSENSITIVE
     )));
@@ -86,7 +84,7 @@ public class DeferringFunction extends DeferringImpl implements IFunction {
     public static final List<Parser<DeferringFunction>> PARSERS = Collections.unmodifiableList(Arrays.asList(
         new Parser<>(
             TokenPattern.quoteIgnoreCase("to decide").concat(WHICH)
-                .concat(new TokenPattern.Replacement(DeferringStory.KIND_NAME_REPLACEMENT, false).capture(
+                .concat(new Replacement(DeferringStory.KIND_NAME_REPLACEMENT, false).capture(
                     CAPTURE_RETURN_TYPE))
                 .concat("is")
                 .concat(PARAM_GLOB.capture(CAPTURE_NAME_PARAMS).loop())
@@ -96,7 +94,7 @@ public class DeferringFunction extends DeferringImpl implements IFunction {
             DeferringFunction::new),
         new Parser<>(
             TokenPattern.quoteIgnoreCase("to decide").concat(WHICH)
-                .concat(new TokenPattern.Replacement(DeferringStory.KIND_NAME_REPLACEMENT, false).capture(
+                .concat(new Replacement(DeferringStory.KIND_NAME_REPLACEMENT, false).capture(
                     CAPTURE_RETURN_TYPE))
                 .concat("is")
                 .concat(PARAM_GLOB.capture(CAPTURE_NAME_PARAMS).loop())
@@ -106,7 +104,7 @@ public class DeferringFunction extends DeferringImpl implements IFunction {
         ),
         new Parser<>(
             TokenPattern.quoteIgnoreCase("to decide").concat(WHICH)
-                .concat(new TokenPattern.Replacement(DeferringStory.KIND_NAME_REPLACEMENT, false).capture(
+                .concat(new Replacement(DeferringStory.KIND_NAME_REPLACEMENT, false).capture(
                     CAPTURE_RETURN_TYPE))
                 .concat("is")
                 .concat(PARAM_GLOB.capture(CAPTURE_NAME_PARAMS).loop())

@@ -3,14 +3,12 @@ package net.inform7j.transpiler;
 import lombok.extern.slf4j.Slf4j;
 import net.inform7j.transpiler.language.IStatement;
 import net.inform7j.transpiler.parser.CombinedParser;
+import net.inform7j.transpiler.tokenizer.*;
+import net.inform7j.transpiler.tokenizer.pattern.Single;
 import net.inform7j.transpiler.util.StatementSupplier;
 import net.inform7j.transpiler.language.impl.deferring.DeferringStory;
 import net.inform7j.transpiler.language.impl.deferring.RawBlockStatement;
 import net.inform7j.transpiler.language.impl.deferring.RawLineStatement;
-import net.inform7j.transpiler.tokenizer.Token;
-import net.inform7j.transpiler.tokenizer.TokenPattern;
-import net.inform7j.transpiler.tokenizer.TokenPredicate;
-import net.inform7j.transpiler.tokenizer.TokenString;
 
 import javax.swing.*;
 import java.io.IOException;
@@ -159,7 +157,7 @@ public record IntakeReader(
     RAW_END = TokenPattern.quote("-)").concat(ENDLINE),
         SECTION = TokenPattern.quoteIgnoreCase("Section").orIgnoreCase("Chapter").orIgnoreCase("Book").orIgnoreCase(
                 "Part").capture(CAPTURE_SECTION_TYPE)
-            .concat(new TokenPattern.Single(TokenPredicate.NEWLINE.negate()).loop().capture(CAPTURE_TITLE))
+            .concat(new Single(TokenPredicate.NEWLINE.negate()).loop().capture(CAPTURE_TITLE))
             .concat(ENDLINE),
     //Pattern.compile("^(?<stype>Section|Chapter|Book|Part) (?<title>.+?)\\s*+$", Pattern.CASE_INSENSITIVE)
     VERSION = TokenPattern.quoteIgnoreCase("Version")
@@ -171,7 +169,7 @@ public record IntakeReader(
         .concat(NOT_ENDMARKER_LOOP.capture(CAPTURE_AUTHOR))
         .concatIgnoreCase("begins here.").concat(ENDLINE),
     //Pattern.compile("^(?:Version (?<version>.+?) of )?(?<ext>.+?)(?: \\([^\\)]++\\))? by (?<author>.+?) begins here\\.\\s*$", Pattern.CASE_INSENSITIVE)
-    BOOK_START = TokenPattern.Single.STRING.capture(CAPTURE_TITLE)
+    BOOK_START = Single.STRING.capture(CAPTURE_TITLE)
         .concatIgnoreCase("by")
         .concat(NOT_ENDMARKER_LOOP.capture(CAPTURE_AUTHOR))
         .concat(ENDLINE),
@@ -179,7 +177,7 @@ public record IntakeReader(
     IGNORE = TokenPattern.quoteIgnoreCase("Release along with an interpreter.")
         .or(TokenPattern.quoteIgnoreCase("Use").concat(NOT_ENDMARKER_LOOP).concat(ENDMARKER))
         .or(TokenPattern.quoteIgnoreCase("Understand the command")
-            .concat(TokenPattern.Single.STRING.concatOptionalIgnoreCase("and").loop())
+            .concat(Single.STRING.concatOptionalIgnoreCase("and").loop())
             .concatIgnoreCase("as something new."))
         .concat(ENDLINE),
     //Pattern.compile("^(?:Release along with an interpreter\\.|Use .+?\\.|understand the command \"[^\"\\.]++\"(?: and \"[^\"]++\")*+ as something new\\.)\\s*$", Pattern.CASE_INSENSITIVE)
@@ -188,7 +186,7 @@ public record IntakeReader(
         .or(AN.concatIgnoreCase(
             "hyperlink processing rule (this is the default command replacement by hyperlinks rule):"))
         .concat(ENDLINE),
-        COMMENTSTRING = TokenPattern.Single.STRING.concat(ENDLINE),
+        COMMENTSTRING = Single.STRING.concat(ENDLINE),
         END = NOT_ENDMARKER_LOOP.capture(CAPTURE_EXT)
             .concat(TokenPattern.quoteIgnoreCase("end").orIgnoreCase("ends"))
             .concat("here.")
@@ -216,7 +214,7 @@ public record IntakeReader(
     
     public boolean processRootLine(final RawLineStatement line, final StatementSupplier sup) {
         TokenString lstr = new TokenString(line.raw().stream().filter(TokenPredicate.IS_WHITESPACE.negate()));
-        Optional<TokenPattern.Result> r = INCLUDE_RAW.matches(lstr).findFirst();
+        Optional<Result> r = INCLUDE_RAW.matches(lstr).findFirst();
         if(r.isPresent()) {
             while(true) {
                 Optional<? extends IStatement> opt = sup.getNextOptional(IStatement.class);
@@ -228,7 +226,7 @@ public record IntakeReader(
         }
         r = INCLUDE.matches(lstr).findFirst();
         if(r.isPresent()) {
-            final TokenPattern.Result res = r.get();
+            final Result res = r.get();
             final TokenString auth = res.cap(CAPTURE_AUTHOR);
             final TokenString ex = res.cap(CAPTURE_EXT);
             Predicate<String> author = Pattern.compile(Token.toPattern(auth), Pattern.CASE_INSENSITIVE)
@@ -274,7 +272,7 @@ public record IntakeReader(
         }
         r = SECTION.matches(lstr).findFirst();
         if(r.isPresent()) {
-            final TokenPattern.Result res = r.get();
+            final Result res = r.get();
             log.info(
                 "Parsing {} \"{}\" of {} @{}",
                 res.cap(CAPTURE_SECTION_TYPE),
@@ -286,7 +284,7 @@ public record IntakeReader(
         }
         r = VERSION.matches(lstr).findFirst();
         if(r.isPresent()) {
-            final TokenPattern.Result res = r.get();
+            final Result res = r.get();
             TokenString ext = res.cap(CAPTURE_EXT);
             if(source instanceof Source.Extension e) e.tokenName().set(ext);
             log.info(
@@ -313,7 +311,7 @@ public record IntakeReader(
         }
         r = BOOK_START.matches(lstr).findFirst();
         if(r.isPresent()) {
-            final TokenPattern.Result res = r.get();
+            final Result res = r.get();
             log.info(
                 "Parsing {} by {} @{}",
                 res.cap(CAPTURE_TITLE),
@@ -367,7 +365,7 @@ public record IntakeReader(
         }
         r = INPUT_LIKELYHOOD.matches(lstr).findFirst();
         if(r.isPresent()) {
-            final TokenPattern.Result res = r.get();
+            final Result res = r.get();
             log.info(
                 "Likelyhood assertion: {} is {}",
                 res.cap(CAPTURE_INPUT),

@@ -5,13 +5,12 @@ import java.util.regex.Pattern;
 
 import net.inform7j.transpiler.Source;
 import net.inform7j.transpiler.language.IKind;
-import net.inform7j.transpiler.tokenizer.TokenPattern;
-import net.inform7j.transpiler.tokenizer.TokenPredicate;
-import net.inform7j.transpiler.tokenizer.TokenString;
+import net.inform7j.transpiler.tokenizer.*;
+import net.inform7j.transpiler.tokenizer.pattern.Single;
 import net.inform7j.transpiler.util.LazyLookup;
 
 public class DeferringKind extends DeferringImpl implements IKind {
-    public static final TokenPattern KIND = new TokenPattern.Single(new TokenPredicate(Pattern.compile(
+    public static final TokenPattern KIND = new Single(new TokenPredicate(Pattern.compile(
         "kind",
         Pattern.CASE_INSENSITIVE
     )));
@@ -20,7 +19,7 @@ public class DeferringKind extends DeferringImpl implements IKind {
     public static final Parser<DeferringKind> PARSER = new Parser<>(
         AN.omittable().concat(WORD_LOOP.capture(CAPTURE_NAME))
             .concatIgnoreCase("is a kind of")
-            .concat(new TokenPattern.Replacement(
+            .concat(new Replacement(
                 DeferringStory.KIND_NAME_REPLACEMENT,
                 false
             ).capture(CAPTURE_SUPERKIND))
@@ -43,7 +42,7 @@ public class DeferringKind extends DeferringImpl implements IKind {
     }
     public DeferringKind(ParseContext ctx) {
         super(ctx);
-        TokenPattern.Result m = ctx.result();
+        Result m = ctx.result();
         NAME = m.cap(CAPTURE_NAME);
         SUPER_KIND = Optional.of(new LazyLookup<>(m.cap(CAPTURE_SUPERKIND), story::getKind));
     }

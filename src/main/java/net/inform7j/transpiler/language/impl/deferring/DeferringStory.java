@@ -19,6 +19,8 @@ import net.inform7j.transpiler.language.rules.ISimpleRule;
 import net.inform7j.transpiler.tokenizer.Token;
 import net.inform7j.transpiler.tokenizer.TokenPattern;
 import net.inform7j.transpiler.tokenizer.TokenString;
+import net.inform7j.transpiler.tokenizer.pattern.CaptureReplacement;
+import net.inform7j.transpiler.tokenizer.pattern.Conjunction;
 import net.inform7j.transpiler.util.CombinedCollection;
 import net.inform7j.transpiler.util.LazyLookup;
 import net.inform7j.transpiler.util.MappedCollection;
@@ -50,20 +52,20 @@ public class DeferringStory implements IStory {
         }
     }
     
-    private final TokenPattern singleKindNames = new TokenPattern.Conjunction(
+    private final TokenPattern singleKindNames = new Conjunction(
         new MappedCollection<>(
             new CombinedCollection<>(kinds.keySet(), enums.get(IEnum.Category.KIND).keySet()),
             TokenPattern::quoteIgnoreCase
         )
     );
-    private final TokenPattern pluralKindNames = new TokenPattern.Conjunction(
+    private final TokenPattern pluralKindNames = new Conjunction(
         new MappedCollection<>(
             new CombinedCollection<>(kinds.keySet(), enums.get(IEnum.Category.KIND).keySet()),
             ((UnaryOperator<TokenString>) TokenString::pluralize).andThen(TokenPattern::quoteIgnoreCase)
         )
     );
     private final TokenPattern kindNames = TokenPattern.quoteIgnoreCase("list of").loop().omittable()
-        .concat(new TokenPattern.Conjunction(Set.of(singleKindNames, pluralKindNames)));
+        .concat(new Conjunction(Set.of(singleKindNames, pluralKindNames)));
     private final Map<TokenString, Map<TokenString, DeferringProperty>> properties = new HashMap<>();
     {
         addBuiltinProperty(new DeferringProperty(this, null, BaseKind.FIGURE, new TokenString("file"), BaseKind.TEXT));
@@ -101,16 +103,16 @@ public class DeferringStory implements IStory {
         ));
     }
     public static final String PROPERTY_NAME_REPLACEMENT = "property_names";
-    private final TokenPattern propertyNames = new TokenPattern.Conjunction(new CombinedCollection<>(new MappedCollection<>(
+    private final TokenPattern propertyNames = new Conjunction(new CombinedCollection<>(new MappedCollection<>(
         properties.values(),
         m -> new MappedCollection<>(m.keySet(), TokenPattern::quoteIgnoreCase)
     )));
     
     public static final String KIND_PROPERTY_NAME_REPLACEMENT = "kind_property_names";
     public static final String PROPERTY_NAME_REPLACEMENT_KIND_CAPTURE = "kind_name";
-    private final TokenPattern kindPropertyNames = new TokenPattern.CaptureReplacement(
+    private final TokenPattern kindPropertyNames = new CaptureReplacement(
         PROPERTY_NAME_REPLACEMENT_KIND_CAPTURE,
-        l -> new TokenPattern.Conjunction(
+        l -> new Conjunction(
             new MappedCollection<>(
                 new CombinedCollection<>(
                     properties.getOrDefault(l, Collections.emptyMap()).keySet(),
@@ -135,14 +137,14 @@ public class DeferringStory implements IStory {
     }
     public static final String OBJECT_NAME_REPLACEMENT = "object_names";
     private static final TokenString it_tokens = new TokenString(new Token(Token.Type.WORD, "it"));
-    private final TokenPattern objectNames = new TokenPattern.Conjunction(new MappedCollection<>(
+    private final TokenPattern objectNames = new Conjunction(new MappedCollection<>(
         objects.keySet(),
         TokenPattern::quoteIgnoreCase
     ));
     
     public static final String OBJECT_PROPERTY_NAME_REPLACEMENT = "object_property_names";
     public static final String PROPERTY_NAME_REPLACEMENT_OBJECT_CAPTURE = "object_name";
-    private final TokenPattern objectPropertyNames = new TokenPattern.CaptureReplacement(
+    private final TokenPattern objectPropertyNames = new CaptureReplacement(
         PROPERTY_NAME_REPLACEMENT_OBJECT_CAPTURE,
         l -> {
             DeferringObject obj = objects.get(l);
@@ -154,7 +156,7 @@ public class DeferringStory implements IStory {
                 .map(Optional::orElseThrow);
             List<TokenString> names = kinds.map(DeferringKind::name).map(properties::get).filter(Objects::nonNull).map(
                 Map::keySet).flatMap(Set::stream).toList();
-            return new TokenPattern.Conjunction(new MappedList<>(names, TokenPattern::quoteIgnoreCase));
+            return new Conjunction(new MappedList<>(names, TokenPattern::quoteIgnoreCase));
         },
         false
     );
@@ -166,7 +168,7 @@ public class DeferringStory implements IStory {
     private final Map<TokenString, Map<TokenString, DeferringDefault>> pdefaults = new HashMap<>();
     private final Map<TokenString, DeferringAction> actions = new HashMap<>();
     public static final String ACTION_NAME_REPLACEMENT = "action_names";
-    private final TokenPattern actionNames = new TokenPattern.Conjunction(new MappedCollection<>(
+    private final TokenPattern actionNames = new Conjunction(new MappedCollection<>(
         actions.keySet(),
         TokenPattern::quoteIgnoreCase
     ));

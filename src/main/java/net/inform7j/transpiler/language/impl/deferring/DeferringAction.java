@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import net.inform7j.transpiler.Source;
 import net.inform7j.transpiler.language.IAction;
+import net.inform7j.transpiler.tokenizer.Result;
 import net.inform7j.transpiler.tokenizer.TokenPattern;
 import net.inform7j.transpiler.tokenizer.TokenString;
 
@@ -59,7 +60,7 @@ public class DeferringAction extends DeferringImpl implements IAction {
     
     public DeferringAction(ParseContext ctx) {
         super(ctx);
-        TokenPattern.Result m = ctx.result();
+        Result m = ctx.result();
         NAME = m.cap(CAPTURE_NAME);
         PRIMARY = m.capOpt(CAPTURE_PRIMARY);
         SECONDARY = m.capOpt(CAPTURE_SECONDARY);

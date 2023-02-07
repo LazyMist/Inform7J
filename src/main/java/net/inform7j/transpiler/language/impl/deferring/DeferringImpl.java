@@ -7,12 +7,14 @@ import java.util.regex.Pattern;
 
 import net.inform7j.transpiler.Source;
 import net.inform7j.transpiler.language.IStatement;
+import net.inform7j.transpiler.tokenizer.Result;
+import net.inform7j.transpiler.tokenizer.pattern.End;
 import net.inform7j.transpiler.util.StatementSupplier;
 import net.inform7j.transpiler.language.IStory;
 import net.inform7j.transpiler.tokenizer.Token;
 import net.inform7j.transpiler.tokenizer.TokenPattern;
 import net.inform7j.transpiler.tokenizer.TokenPredicate;
-import net.inform7j.transpiler.tokenizer.TokenPattern.Single;
+import net.inform7j.transpiler.tokenizer.pattern.Single;
 
 public abstract class DeferringImpl implements IStory.Element {
     public static final String SPECIAL_CHARS = ".,(){}";
@@ -32,8 +34,8 @@ public abstract class DeferringImpl implements IStory.Element {
         ".+s",
         Pattern.CASE_INSENSITIVE
     )));
-    public static final TokenPattern ENDMARKER = new Single(TokenPredicate.END_MARKER).or(TokenPattern.END);
-    public static final TokenPattern ENDLINE = TokenPattern.END.or("\n");
+    public static final TokenPattern ENDMARKER = new Single(TokenPredicate.END_MARKER).or(End.PATTERN);
+    public static final TokenPattern ENDLINE = End.PATTERN.or("\n");
     public static final TokenPattern WORD_LOOP = Single.WORD.loop(true);
     public static final TokenPattern WORD_LOOP_GREEDY = Single.WORD.loop();
     public static final TokenPattern IDENTIFIER_TOKEN = Single.WORD.or(new Single(new TokenPredicate(
@@ -82,10 +84,10 @@ public abstract class DeferringImpl implements IStory.Element {
     public record ParseContext(
         DeferringStory story,
         IStatement source,
-        TokenPattern.Result result,
+        Result result,
         StatementSupplier supplier
     ) {
-        public ParseContext(ParseContext ctx, TokenPattern.Result result) {
+        public ParseContext(ParseContext ctx, Result result) {
             this(ctx.story, ctx.source, result, ctx.supplier);
         }
     }

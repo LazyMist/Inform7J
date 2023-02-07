@@ -9,13 +9,11 @@ import java.util.stream.Stream;
 import net.inform7j.transpiler.Source;
 import net.inform7j.transpiler.language.IStatement;
 import net.inform7j.transpiler.language.IStory;
-import net.inform7j.transpiler.tokenizer.Token;
-import net.inform7j.transpiler.tokenizer.TokenPattern;
-import net.inform7j.transpiler.tokenizer.TokenPredicate;
-import net.inform7j.transpiler.tokenizer.TokenString;
+import net.inform7j.transpiler.tokenizer.*;
+import net.inform7j.transpiler.tokenizer.pattern.Single;
 
 public class DeferringPredicate extends DeferringFunction {
-    public static final TokenPattern WHETHER = new TokenPattern.Single(new TokenPredicate(Pattern.compile(
+    public static final TokenPattern WHETHER = new Single(new TokenPredicate(Pattern.compile(
         "if|whether",
         Pattern.CASE_INSENSITIVE
     )));
@@ -45,7 +43,7 @@ public class DeferringPredicate extends DeferringFunction {
                 .concat(ENDLINE)
             /*Pattern.compile("^Definition: an? (?<kind>.+?)(?: \\(called (?<thisVar>.+?)\\))? (?<nameParams>"+DeferringFunction.PARAM_GLOB+"+):\\s*+$", Pattern.CASE_INSENSITIVE)*/,
             ctx -> {
-                final TokenPattern.Result m = ctx.result();
+                final Result m = ctx.result();
                 TokenString thisVar = m.capOpt(CAPTURE_THIS_VAR).orElse(new TokenString(new Token(
                     Token.Type.WORD,
                     "it"
@@ -75,7 +73,7 @@ public class DeferringPredicate extends DeferringFunction {
                 .concat(ENDMARKER)
             /*Pattern.compile("^Definition: an? (?<kind>.+?)(?: \\(called (?<thisVar>.+?)\\))? (?<nameParams>"+DeferringFunction.PARAM_GLOB+"+):\\s*+$", Pattern.CASE_INSENSITIVE)*/,
             ctx -> {
-                final TokenPattern.Result m = ctx.result();
+                final Result m = ctx.result();
                 TokenString thisVar = m.capOpt(CAPTURE_THIS_VAR).orElse(new TokenString(new Token(
                     Token.Type.WORD,
                     "it"

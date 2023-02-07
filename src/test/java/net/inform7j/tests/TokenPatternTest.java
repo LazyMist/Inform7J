@@ -7,14 +7,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Predicate;
 
-import net.inform7j.transpiler.tokenizer.TokenString;
+import net.inform7j.transpiler.tokenizer.*;
+import net.inform7j.transpiler.tokenizer.pattern.Concat;
+import net.inform7j.transpiler.tokenizer.pattern.Lookahead;
+import net.inform7j.transpiler.tokenizer.pattern.Single;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import net.inform7j.transpiler.tokenizer.Token;
-import net.inform7j.transpiler.tokenizer.TokenPattern;
-import net.inform7j.transpiler.tokenizer.TokenPredicate;
 
 class TokenPatternTest {
     private static final String[] TESTSTRINGS = {"a word", "another word", "nothing"};
@@ -31,11 +30,11 @@ class TokenPatternTest {
     }
     @Test
     void testSingle() {
-        TokenPattern.Single pat = new TokenPattern.Single(new TokenPredicate("nothing"));
+        Single pat = new Single(new TokenPredicate("nothing"));
         for(int i = 0; i < TESTSTRINGS.length; i++) {
             switch(i) {
             case 2:
-                assertIterableEquals(List.of(new TokenPattern.Result(1)), pat.matches(INPUTS.get(i)).toList());
+                assertIterableEquals(List.of(new Result(1)), pat.matches(INPUTS.get(i)).toList());
                 break;
             default:
                 assertIterableEquals(Collections::emptyIterator, pat.matches(INPUTS.get(i)).toList());
@@ -47,15 +46,15 @@ class TokenPatternTest {
     @Test
     void testConcat() {
         for(int i = 0; i < TESTSTRINGS.length; i++) {
-            TokenPattern.Concat pat = new TokenPattern.Concat(INPUTS.get(i)
+            Concat pat = new Concat(INPUTS.get(i)
                 .stream()
                 .<Predicate<Token>>map(t -> t::equals)
-                .map(TokenPattern.Single::new)
+                .map(Single::new)
                 .toList());
             for(int j = 0; j < TESTSTRINGS.length; j++) {
 				if(i == j) {
 					assertIterableEquals(
-						List.of(new TokenPattern.Result(INPUTS.get(i).length())),
+						List.of(new Result(INPUTS.get(i).length())),
 						pat.matches(INPUTS.get(j)).toList()
 					);
 				} else {
@@ -67,8 +66,8 @@ class TokenPatternTest {
     
     @Test
     void testLookahead() {
-        TokenPattern.Lookahead pat = new TokenPattern.Lookahead(
-            new TokenPattern.Single(new TokenPredicate("another")),
+        Lookahead pat = new Lookahead(
+            new Single(new TokenPredicate("another")),
             true
         );
         for(int i = 0; i < TESTSTRINGS.length; i++) {
@@ -77,7 +76,7 @@ class TokenPatternTest {
                 assertIterableEquals(Collections::emptyIterator, pat.matches(INPUTS.get(i)).toList());
                 break;
             default:
-                assertIterableEquals(List.of(TokenPattern.Result.EMPTY), pat.matches(INPUTS.get(i)).toList());
+                assertIterableEquals(List.of(Result.EMPTY), pat.matches(INPUTS.get(i)).toList());
                 break;
             }
         }

@@ -1,42 +1,38 @@
 package net.inform7j.transpiler.language.impl.deferring;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
 import net.inform7j.transpiler.Source;
 import net.inform7j.transpiler.language.IValue;
-import net.inform7j.transpiler.tokenizer.Token;
-import net.inform7j.transpiler.tokenizer.TokenPattern;
-import net.inform7j.transpiler.tokenizer.TokenPredicate;
-import net.inform7j.transpiler.tokenizer.TokenString;
+import net.inform7j.transpiler.tokenizer.*;
+import net.inform7j.transpiler.tokenizer.pattern.Single;
 import net.inform7j.transpiler.util.LazyLookup;
 
 public class DeferringValue extends DeferringImpl implements IValue {
-    public static final TokenPattern FILE = new TokenPattern.Single(new TokenPredicate(Pattern.compile(
+    public static final TokenPattern FILE = new Single(new TokenPredicate(Pattern.compile(
         "file",
         Pattern.CASE_INSENSITIVE
     )));
     public static final String CAPTURE_NAME = "name";
     public static final String CAPTURE_OBJECT = "object";
     public static final String CAPTURE_VALUE = "value";
-    private static final TokenPattern.Replacement OBJ = new TokenPattern.Replacement(
+    private static final Replacement OBJ = new Replacement(
         DeferringStory.OBJECT_NAME_REPLACEMENT,
         false
     );
-    private static final TokenPattern.Replacement PROP = new TokenPattern.Replacement(
+    private static final Replacement PROP = new Replacement(
         DeferringStory.OBJECT_PROPERTY_NAME_REPLACEMENT,
         false
     );
-    private static final TokenPattern.Replacement GPROP = new TokenPattern.Replacement(
+    private static final Replacement GPROP = new Replacement(
         DeferringStory.PROPERTY_NAME_REPLACEMENT,
         false
     );
     private static final TokenPattern RULE_START = TokenPattern.quoteIgnoreCase("to decide").orIgnoreCase("Rule for");
     public static final List<Parser<DeferringValue>> PARSERS = List.of(new Parser<>(
-        TokenPattern.Single.STRING.capture(CAPTURE_VALUE)
+        Single.STRING.capture(CAPTURE_VALUE)
             .concat(ENDMARKER)
         /*Pattern.compile("^(?<value>\"[^\"]++\")(?>\\s*+(?>\\.|;))?")*/,
         DeferringValue::Desc
@@ -75,7 +71,7 @@ public class DeferringValue extends DeferringImpl implements IValue {
             .concat(OBJ.capture(CAPTURE_OBJECT, DeferringStory.PROPERTY_NAME_REPLACEMENT_OBJECT_CAPTURE))
             .concatIgnoreCase("has").concat(AN)
             .concat(PROP.capture(CAPTURE_NAME))
-            .concat(TokenPattern.Single.STRING.capture(CAPTURE_VALUE))
+            .concat(Single.STRING.capture(CAPTURE_VALUE))
             .concat(ENDMARKER),
         DeferringValue::new
     ));
@@ -99,7 +95,7 @@ public class DeferringValue extends DeferringImpl implements IValue {
     
     private DeferringValue(ParseContext ctx, TokenString owner, Optional<TokenString> name) {
         super(ctx);
-        final TokenPattern.Result m = ctx.result();
+        final Result m = ctx.result();
         OWNER = new LazyLookup<>(owner, story::getObject);
         NAME = name.map(n -> new LazyLookup<>(n, p -> story.getProperty(OWNER.get().getType(), p)));
         VALUE = m.cap(CAPTURE_VALUE);
@@ -107,7 +103,7 @@ public class DeferringValue extends DeferringImpl implements IValue {
     
     private DeferringValue(ParseContext ctx, TokenString value) {
         super(ctx);
-        final TokenPattern.Result m = ctx.result();
+        final Result m = ctx.result();
         OWNER = new LazyLookup<>(m.cap(CAPTURE_OBJECT), story::getObject);
         NAME = m.capOpt(CAPTURE_NAME).map(n -> new LazyLookup<>(n, p -> story.getProperty(OWNER.get().getType(), p)));
         VALUE = value;
@@ -131,7 +127,7 @@ public class DeferringValue extends DeferringImpl implements IValue {
     
     public DeferringValue(ParseContext ctx) {
         super(ctx);
-        final TokenPattern.Result m = ctx.result();
+        final Result m = ctx.result();
         OWNER = new LazyLookup<>(m.cap(CAPTURE_OBJECT), story::getObject);
         NAME = m.capOpt(CAPTURE_NAME).map(n -> new LazyLookup<>(n, p -> story.getProperty(OWNER.get().getType(), p)));
         VALUE = m.cap(CAPTURE_VALUE);

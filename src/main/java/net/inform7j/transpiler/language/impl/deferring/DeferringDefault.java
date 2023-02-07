@@ -2,16 +2,15 @@ package net.inform7j.transpiler.language.impl.deferring;
 
 import net.inform7j.transpiler.Source;
 import net.inform7j.transpiler.language.IDefault;
-import net.inform7j.transpiler.tokenizer.TokenPattern;
-import net.inform7j.transpiler.tokenizer.TokenPredicate;
-import net.inform7j.transpiler.tokenizer.TokenString;
+import net.inform7j.transpiler.tokenizer.*;
+import net.inform7j.transpiler.tokenizer.pattern.Single;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
 public class DeferringDefault extends DeferringImpl implements IDefault {
-    public static final TokenPattern USUALLY = new TokenPattern.Single(new TokenPredicate(Pattern.compile(
+    public static final TokenPattern USUALLY = new Single(new TokenPredicate(Pattern.compile(
         "usually|normally",
         Pattern.CASE_INSENSITIVE
     )));
@@ -19,20 +18,20 @@ public class DeferringDefault extends DeferringImpl implements IDefault {
     public static final String CAPTURE_OBJECT = "object";
     public static final String CAPTURE_VALUE = "value";
     public static final List<Parser<DeferringDefault>> PARSERS = List.of(new Parser<>(
-        AN.concat(new TokenPattern.Replacement(DeferringStory.KIND_NAME_REPLACEMENT, false).capture(
+        AN.concat(new Replacement(DeferringStory.KIND_NAME_REPLACEMENT, false).capture(
                 CAPTURE_OBJECT,
                 DeferringStory.PROPERTY_NAME_REPLACEMENT_KIND_CAPTURE
             ))
             .concatIgnoreCase("is").concat(USUALLY)
             .concat(TokenPattern.quoteIgnoreCase("not").capture(CAPTURE_VALUE).omittable())
-            .concat(new TokenPattern.Replacement(DeferringStory.KIND_PROPERTY_NAME_REPLACEMENT, false).capture(
+            .concat(new Replacement(DeferringStory.KIND_PROPERTY_NAME_REPLACEMENT, false).capture(
                 CAPTURE_PROPERTY))
             .concat(ENDMARKER)
         /*Pattern.compile("^(?:(?<property>.+?) of )?(?<object>.+?) is (?:usually|normally) (?<value>.+?)\\s*(?:\\.|;|$)", Pattern.CASE_INSENSITIVE)*/,
         DeferringDefault::shortBool
     ), new Parser<>(
         IDENTIFIER_LOOP.capture(CAPTURE_PROPERTY).concatIgnoreCase("of").omittable()
-            .concat(new TokenPattern.Replacement(DeferringStory.OBJECT_NAME_REPLACEMENT, false).capture(CAPTURE_OBJECT))
+            .concat(new Replacement(DeferringStory.OBJECT_NAME_REPLACEMENT, false).capture(CAPTURE_OBJECT))
             .concatIgnoreCase("is").concat(USUALLY)
             .concat(NOT_ENDMARKER_LOOP.capture(CAPTURE_VALUE))
             .concat(ENDMARKER)
@@ -41,7 +40,7 @@ public class DeferringDefault extends DeferringImpl implements IDefault {
     ), new Parser<>(
         IDENTIFIER_LOOP.capture(CAPTURE_PROPERTY).concatIgnoreCase("of").omittable()
             .concat(AN.omittable())
-            .concat(new TokenPattern.Replacement(DeferringStory.KIND_NAME_REPLACEMENT, false).capture(CAPTURE_OBJECT))
+            .concat(new Replacement(DeferringStory.KIND_NAME_REPLACEMENT, false).capture(CAPTURE_OBJECT))
             .concatIgnoreCase("is").concat(USUALLY)
             .concat(NOT_ENDMARKER_LOOP.capture(CAPTURE_VALUE))
             .concat(ENDMARKER)
@@ -68,14 +67,14 @@ public class DeferringDefault extends DeferringImpl implements IDefault {
     
     public DeferringDefault(ParseContext ctx) {
         super(ctx);
-        TokenPattern.Result m = ctx.result();
+        Result m = ctx.result();
         PROPERTY = m.capOpt(CAPTURE_PROPERTY);
         LABEL = m.cap(CAPTURE_OBJECT);
         VALUE = m.cap(CAPTURE_VALUE);
     }
     
     public static DeferringDefault shortBool(ParseContext ctx) {
-        TokenPattern.Result m = ctx.result();
+        Result m = ctx.result();
         return new DeferringDefault(
             ctx.story(),
             ctx.source().source(),

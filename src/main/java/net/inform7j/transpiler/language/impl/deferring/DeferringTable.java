@@ -1,6 +1,5 @@
 package net.inform7j.transpiler.language.impl.deferring;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -12,18 +11,20 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import net.inform7j.transpiler.Source;
+import net.inform7j.transpiler.tokenizer.pattern.End;
+import net.inform7j.transpiler.tokenizer.pattern.Single;
 import net.inform7j.transpiler.util.StatementSupplier;
 import net.inform7j.transpiler.language.ITable;
 import net.inform7j.transpiler.tokenizer.Token;
 import net.inform7j.transpiler.tokenizer.TokenPattern;
-import net.inform7j.transpiler.tokenizer.TokenPattern.Result;
+import net.inform7j.transpiler.tokenizer.Result;
 import net.inform7j.transpiler.tokenizer.TokenPredicate;
 import net.inform7j.transpiler.tokenizer.TokenString;
 
 public class DeferringTable extends DeferringImpl implements ITable<DeferringTable.DeferringColumn> {
     public record DeferringColumn(DeferringTable table, TokenString name, Optional<TokenString> kind)
         implements IColumn<DeferringColumn> {
-        public static final TokenPattern HDR = TokenPattern.Single.WORD.or(new TokenPattern.Single(new TokenPredicate(
+        public static final TokenPattern HDR = Single.WORD.or(new Single(new TokenPredicate(
                 Token.Type.PUNCTUATION,
                 s -> !"(".equals(
                     s)
@@ -32,7 +33,7 @@ public class DeferringTable extends DeferringImpl implements ITable<DeferringTab
                 .concat(WORD_LOOP.capture(CAPTURE_TYPE))
                 .concat(")")
                 .omittable()),
-            HDR_FULL = HDR.concat(TokenPattern.END);
+            HDR_FULL = HDR.concat(End.PATTERN);
         //Pattern.compile("^(?<name>.+?)(?:\\s*\\((?<type>.+?)\\))?$")
         public static Function<DeferringTable, DeferringColumn> parse(TokenString s) {
             final Optional<Result> m = HDR_FULL.matches(s).findFirst();
@@ -46,7 +47,7 @@ public class DeferringTable extends DeferringImpl implements ITable<DeferringTab
         }
     }
     
-    public static final TokenPattern TABLE = new TokenPattern.Single(new TokenPredicate(Pattern.compile(
+    public static final TokenPattern TABLE = new Single(new TokenPredicate(Pattern.compile(
         "table",
         Pattern.CASE_INSENSITIVE
     )));
@@ -68,7 +69,7 @@ public class DeferringTable extends DeferringImpl implements ITable<DeferringTab
             for(Token tok : hdrLine.raw()) {
                 if(tok.type() == Token.Type.TAB) {
                     if(!t.isEmpty()) {
-						if(EMPTY.concat(TokenPattern.END).matches(t).findFirst().isPresent()) {
+						if(EMPTY.concat(End.PATTERN).matches(t).findFirst().isPresent()) {
 							str.accept(TokenString.EMPTY);
 						} else {
 							str.accept(t);
@@ -80,7 +81,7 @@ public class DeferringTable extends DeferringImpl implements ITable<DeferringTab
                 if(!TokenPredicate.IS_WHITESPACE.test(tok)) t = t.concat(new TokenString(tok));
             }
             if(!t.isEmpty()) {
-				if(EMPTY.concat(TokenPattern.END).matches(t).findFirst().isPresent()) {
+				if(EMPTY.concat(End.PATTERN).matches(t).findFirst().isPresent()) {
 					str.accept(TokenString.EMPTY);
 				} else {
 					str.accept(t);
@@ -123,17 +124,17 @@ public class DeferringTable extends DeferringImpl implements ITable<DeferringTab
                 ContinuedColumn::name,
                 c -> c.kind().get()
             ));
-            ROWS = Collections.unmodifiableList(rOWS.map(Stream::toList).map(l -> {
-				if(l.size() > cols.size()) {
-					throw new IllegalArgumentException("Row Mismatch: expected " + cols.size() + " got " + l.size() + ":\n" + cols + "\n" + l);
-				}
+            ROWS = rOWS.map(Stream::toList).map(l -> {
+                if(l.size() > cols.size()) {
+                    throw new IllegalArgumentException("Row Mismatch: expected " + cols.size() + " got " + l.size() + ":\n" + cols + "\n" + l);
+                }
                 return IntStream.range(0, l.size())
                     .boxed()
                     .collect(Collectors.toUnmodifiableMap(
                         i -> cols.get(i).name(),
                         l::get
                     ));
-            }).toList());
+            }).toList();
         }
         public DeferringTable table() {
             return story.getTable(TABLE_NAME, NUMBER);
@@ -161,7 +162,7 @@ public class DeferringTable extends DeferringImpl implements ITable<DeferringTab
     public static final Parser<DeferringTable> PARSER = new Parser<>(
         TokenPattern.quoteIgnoreCase("Table")
             .concat(
-                TokenPattern.Single.WORD.capture(CAPTURE_NUMBER)
+                Single.WORD.capture(CAPTURE_NUMBER)
                     .concat(TokenPattern.quote("-").concat(WORD_LOOP.capture(CAPTURE_NAME)).omittable())
                     .or(TokenPattern.quoteIgnoreCase("of").concat(WORD_LOOP.capture(CAPTURE_NAME))))
             .concat(ENDLINE)
@@ -169,7 +170,7 @@ public class DeferringTable extends DeferringImpl implements ITable<DeferringTab
         DeferringTable::parse);
     public static final TokenPattern EMPTY = TokenPattern.quote("--");
     public static final TokenPattern FINALIZER = TokenPattern.quoteIgnoreCase("with")
-        .concat(TokenPattern.Single.WORD.capture(CAPTURE_COUNT))
+        .concat(Single.WORD.capture(CAPTURE_COUNT))
         .concatIgnoreCase("blank")
         .concat(TokenPattern.quoteIgnoreCase("row").orIgnoreCase("rows"))
         .concat(ENDMARKER);
@@ -201,7 +202,7 @@ public class DeferringTable extends DeferringImpl implements ITable<DeferringTab
             for(Token tok : line.raw()) {
                 if(tok.type() == Token.Type.TAB) {
                     if(!t.isEmpty()) {
-						if(EMPTY.concat(TokenPattern.END).matches(t).findFirst().isPresent()) {
+						if(EMPTY.concat(End.PATTERN).matches(t).findFirst().isPresent()) {
 							str.accept(TokenString.EMPTY);
 						} else {
 							str.accept(t);
@@ -213,7 +214,7 @@ public class DeferringTable extends DeferringImpl implements ITable<DeferringTab
                 if(!TokenPredicate.IS_WHITESPACE.test(tok)) t = t.concat(new TokenString(tok));
             }
             if(!t.isEmpty()) {
-				if(EMPTY.concat(TokenPattern.END).matches(t).findFirst().isPresent()) {
+				if(EMPTY.concat(End.PATTERN).matches(t).findFirst().isPresent()) {
 					str.accept(TokenString.EMPTY);
 				} else {
 					str.accept(t);
@@ -230,7 +231,7 @@ public class DeferringTable extends DeferringImpl implements ITable<DeferringTab
         for(Token tok : hdrLine.raw()) {
             if(tok.type() == Token.Type.TAB) {
                 if(!t.isEmpty()) {
-					if(EMPTY.concat(TokenPattern.END).matches(t).findFirst().isPresent()) {
+					if(EMPTY.concat(End.PATTERN).matches(t).findFirst().isPresent()) {
 						str.accept(TokenString.EMPTY);
 					} else {
 						str.accept(t);
@@ -242,7 +243,7 @@ public class DeferringTable extends DeferringImpl implements ITable<DeferringTab
             if(!TokenPredicate.IS_WHITESPACE.test(tok)) t = t.concat(new TokenString(tok));
         }
         if(!t.isEmpty()) {
-			if(EMPTY.concat(TokenPattern.END).matches(t).findFirst().isPresent()) {
+			if(EMPTY.concat(End.PATTERN).matches(t).findFirst().isPresent()) {
 				str.accept(TokenString.EMPTY);
 			} else {
 				str.accept(t);
@@ -274,19 +275,19 @@ public class DeferringTable extends DeferringImpl implements ITable<DeferringTab
         super(story, source);
         NUMBER = nUMBER;
         NAME = nAME;
-        COLUMNS = Collections.unmodifiableList(cOLUMNS.map(f -> f.apply(this)).toList());
-        ROWS = Collections.unmodifiableList(rOWS.map(Stream::toList).map(l -> {
-			if(l.size() > COLUMNS.size()) {
-				throw new IllegalArgumentException("Row Mismatch: expected " + COLUMNS.size() + " got " + l.size() + ":\n" + l.stream()
-					.map(TokenString::toString)
-					.collect(Collectors.joining("\n")));
-			}
+        COLUMNS = cOLUMNS.map(f -> f.apply(this)).toList();
+        ROWS = rOWS.map(Stream::toList).map(l -> {
+            if(l.size() > COLUMNS.size()) {
+                throw new IllegalArgumentException("Row Mismatch: expected " + COLUMNS.size() + " got " + l.size() + ":\n" + l.stream()
+                    .map(TokenString::toString)
+                    .collect(Collectors.joining("\n")));
+            }
             return IntStream.range(0, l.size()).boxed()
                 .collect(Collectors.toUnmodifiableMap(
                     COLUMNS::get,
                     l::get
                 ));
-        }).toList());
+        }).toList();
     }
     
     @Override

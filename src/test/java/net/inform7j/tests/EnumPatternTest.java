@@ -3,7 +3,7 @@ package net.inform7j.tests;
 import net.inform7j.transpiler.language.impl.deferring.DeferringEnum;
 import net.inform7j.transpiler.tokenizer.Token;
 import net.inform7j.transpiler.tokenizer.TokenPattern;
-import net.inform7j.transpiler.tokenizer.TokenPattern.Result;
+import net.inform7j.transpiler.tokenizer.Result;
 import net.inform7j.transpiler.tokenizer.TokenString;
 import org.junit.jupiter.api.Test;
 

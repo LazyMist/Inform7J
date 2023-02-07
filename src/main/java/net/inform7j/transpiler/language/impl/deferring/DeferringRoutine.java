@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.inform7j.transpiler.IntakeReader;
 import net.inform7j.transpiler.Source;
 import net.inform7j.transpiler.language.IStatement;
+import net.inform7j.transpiler.tokenizer.pattern.Single;
 import net.inform7j.transpiler.util.StatementSupplier;
 import net.inform7j.transpiler.language.IStory.BaseKind;
 import net.inform7j.transpiler.tokenizer.TokenPattern;
@@ -35,7 +36,7 @@ public class DeferringRoutine extends DeferringFunction {
         new Parser<>(
             TokenPattern.quoteIgnoreCase("to").concat(PARAM_GLOB.loop())
                 .concat(": (-")
-                .concat(new TokenPattern.Single(TokenPredicate.NEWLINE.negate()).loop())
+                .concat(new Single(TokenPredicate.NEWLINE.negate()).loop())
                 .concat("-)")
                 .concat(ENDMARKER)
             /*Pattern.compile("^to (?<nameParams>"+DeferringFunction.PARAM_GLOB+"+): \\(-.*?-\\)\\.?\\s*$", Pattern.CASE_INSENSITIVE)*/,

@@ -8,22 +8,25 @@ import java.util.Optional;
 import net.inform7j.transpiler.Source;
 import net.inform7j.transpiler.language.IAlias;
 import net.inform7j.transpiler.language.IStory.Element;
+import net.inform7j.transpiler.tokenizer.Replacement;
+import net.inform7j.transpiler.tokenizer.Result;
 import net.inform7j.transpiler.tokenizer.TokenPattern;
 import net.inform7j.transpiler.tokenizer.TokenString;
+import net.inform7j.transpiler.tokenizer.pattern.Single;
 
 public class DeferringAlias extends DeferringImpl implements IAlias<DeferringImpl> {
     public static final String CAPTURE_ALIAS = "alias";
     public static final String CAPTURE_ORIGINAL = "original";
     private static final TokenPattern PATTERN_PREFIX = TokenPattern.quoteIgnoreCase("understand")
-        .concat(TokenPattern.Single.STRING.capture(CAPTURE_ALIAS))
-        .concat(TokenPattern.quoteIgnoreCase("and").orIgnoreCase("or").concat(TokenPattern.Single.STRING.capture(
+        .concat(Single.STRING.capture(CAPTURE_ALIAS))
+        .concat(TokenPattern.quoteIgnoreCase("and").orIgnoreCase("or").concat(Single.STRING.capture(
             CAPTURE_ALIAS)).loop().omittable())
         .concatIgnoreCase("as");
     
     public static TokenPattern getAliasPattern(String replacement, String... replacements) {
-        TokenPattern repl = new TokenPattern.Replacement(replacement, false);
+        TokenPattern repl = new Replacement(replacement, false);
         for(String s : replacements) {
-            repl = repl.or(new TokenPattern.Replacement(s, false));
+            repl = repl.or(new Replacement(s, false));
         }
         return PATTERN_PREFIX.concat(repl.capture(CAPTURE_ORIGINAL))
             .concat(ENDMARKER);
@@ -44,7 +47,7 @@ public class DeferringAlias extends DeferringImpl implements IAlias<DeferringImp
     }
     public DeferringAlias(ParseContext ctx) {
         super(ctx);
-        TokenPattern.Result m = ctx.result();
+        Result m = ctx.result();
         ALIASES = Collections.unmodifiableList(new ArrayList<>(m.capMulti(CAPTURE_ALIAS)));
         ORIGINAL = m.cap(CAPTURE_ORIGINAL);
     }
