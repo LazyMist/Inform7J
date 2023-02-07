@@ -30,7 +30,7 @@ public enum Statistics {
     CONTINUED_TABLES(ELEMENTS),
     VALUES(ELEMENTS),
     ALIASES(ELEMENTS),
-    LINES(Logger::atDebug);
+    LINES(Logger::atTrace);
     private final Optional<Statistics> parent;
     private final Function<Logger, LoggingEventBuilder> logSeverity;
     private int count = 0;
