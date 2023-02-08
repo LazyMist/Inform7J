@@ -33,11 +33,15 @@ public class DeferringStory implements IStory {
     private final EnumMap<BaseKind, DeferringKind> basekinds = new EnumMap<>(BaseKind.class);
     {
         for(BaseKind b : BaseKind.values()) {
-            DeferringKind d = new DeferringKind(
+            DeferringKind d = b.parentKind == null ? new DeferringKind(
+                this,
+                null,
+                b.writtenName
+            ) : new DeferringKind(
                 this,
                 null,
                 b.writtenName,
-                b.parentKind == null ? Optional.empty() : Optional.of(basekinds.get(b.parentKind))
+                basekinds.get(b.parentKind)
             );
             basekinds.put(b, d);
             addKind(d);
@@ -214,8 +218,8 @@ public class DeferringStory implements IStory {
     }
     
     public boolean addKind(DeferringKind kind) {
-        Statistics.KINDS.prepareLog(log).log("Adding kind {}", kind.NAME);
-        return kinds.putIfAbsent(kind.NAME, kind) != null;
+        Statistics.KINDS.prepareLog(log).log("Adding kind {}", kind.name);
+        return kinds.putIfAbsent(kind.name, kind) != null;
     }
     
     @Override
@@ -280,22 +284,22 @@ public class DeferringStory implements IStory {
     public boolean addProperty(DeferringProperty property) {
         Statistics.PROPERTIES.prepareLog(log).log(
             "Adding property {} of {} of type {}",
-            property.NAME,
-            property.OWNER,
-            property.TYPE
+            property.name,
+            property.owner.key(),
+            property.type.key()
         );
-        return properties.computeIfAbsent(property.OWNER, s -> new HashMap<>()).putIfAbsent(
-            property.NAME,
+        return properties.computeIfAbsent(property.owner.key(), s -> new HashMap<>()).putIfAbsent(
+            property.name,
             property
         ) != null;
     }
     
     private boolean addBuiltinProperty(DeferringProperty property, TokenString... aliases) {
-        Map<TokenString, DeferringProperty> props = properties.computeIfAbsent(property.OWNER, s -> new HashMap<>());
+        Map<TokenString, DeferringProperty> props = properties.computeIfAbsent(property.owner.key(), s -> new HashMap<>());
         for(TokenString a : aliases) {
             props.putIfAbsent(a, property);
         }
-        return props.putIfAbsent(property.NAME, property) != null;
+        return props.putIfAbsent(property.name, property) != null;
     }
     
     @Override
@@ -309,8 +313,8 @@ public class DeferringStory implements IStory {
     }
     
     public boolean addObject(DeferringObject object) {
-        Statistics.OBJECTS.prepareLog(log).log("Adding object {} of type {}", object.NAME, object.TYPE.key());
-        boolean ret = objects.putIfAbsent(object.NAME, object) != null;
+        Statistics.OBJECTS.prepareLog(log).log("Adding object {} of type {}", object.name, object.type.key());
+        boolean ret = objects.putIfAbsent(object.name, object) != null;
         if(!ret) objects.put(it_tokens, object);
         return ret;
     }
@@ -368,18 +372,18 @@ public class DeferringStory implements IStory {
     }
     
     public boolean addValue(DeferringValue value) {
-        Optional<TokenString> name = value.NAME.map(LazyLookup::key);
+        Optional<TokenString> name = value.name.map(LazyLookup::key);
         Statistics.VALUES.prepareLog(log).log(
             "Adding value {} of {} as {}",
             name.orElse(TokenString.EMPTY),
-            value.OWNER.key(),
-            value.VALUE
+            value.owner.key(),
+            value.value
         );
-        return name.map(tokens -> values.computeIfAbsent(value.OWNER.get().NAME, s -> new HashMap<>())
+        return name.map(tokens -> values.computeIfAbsent(value.owner.get().name, s -> new HashMap<>())
                 .putIfAbsent(tokens, value) != null
             )
             .orElseGet(() -> null != freeValues.putIfAbsent(
-                value.OWNER.key(),
+                value.owner.key(),
                 value
             ));
     }

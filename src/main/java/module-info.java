@@ -1,4 +1,4 @@
-import net.inform7j.transpiler.parser.CombinedParser;
+import net.inform7j.transpiler.parser.*;
 
 module inform7J {
     requires java.desktop;
@@ -8,6 +8,9 @@ module inform7J {
     uses CombinedParser.Provider;
     
     provides CombinedParser.Provider with
-        net.inform7j.transpiler.parser.KindParserProvider,
-        net.inform7j.transpiler.parser.LegacyParserProvider;
+        KindParserProvider,
+        EnumParserProvider,
+        PropertyParserProvider,
+        ObjectParserProvider,
+        LegacyParserProvider;
 }

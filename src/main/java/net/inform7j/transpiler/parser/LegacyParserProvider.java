@@ -1,8 +1,7 @@
 package net.inform7j.transpiler.parser;
 
 import net.inform7j.transpiler.language.impl.deferring.*;
-import net.inform7j.transpiler.language.impl.deferring.rules.DeferringActionRule;
-import net.inform7j.transpiler.language.impl.deferring.rules.DeferringConditionedActionRule;
+import net.inform7j.transpiler.language.impl.deferring.rules.*;
 import net.inform7j.transpiler.language.impl.deferring.rules.DeferringNamedRule;
 import net.inform7j.transpiler.language.impl.deferring.rules.DeferringSimpleRule;
 
@@ -16,17 +15,6 @@ public class LegacyParserProvider implements CombinedParser.Provider {
     public static final Collection<? extends CombinedParser> CPARSERS;
     static {
         List<CombinedParser> l = new LinkedList<>();
-        DeferringEnum.PARSERS.stream()
-            .map(SimpleCombinedParser.bind(1, DeferringStory::replace, DeferringStory::addEnum))
-            .forEachOrdered(l::add);
-        DeferringProperty.PARSERS.stream().map(SimpleCombinedParser.bind(
-            2,
-            DeferringStory::replace,
-            DeferringStory::addProperty
-        )).forEachOrdered(l::add);
-        DeferringObject.PARSERS.stream()
-            .map(SimpleCombinedParser.bind(3, DeferringStory::replace, DeferringStory::addObject))
-            .forEachOrdered(l::add);
         DeferringPredicate.PARSERS.stream().map(SimpleCombinedParser.bind(
             4,
             DeferringStory::replace,

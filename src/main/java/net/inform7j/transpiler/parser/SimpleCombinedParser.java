@@ -1,8 +1,8 @@
 package net.inform7j.transpiler.parser;
 
 import net.inform7j.transpiler.language.IStatement;
-import net.inform7j.transpiler.language.impl.deferring.DeferringImpl;
 import net.inform7j.transpiler.language.impl.deferring.DeferringStory;
+import net.inform7j.transpiler.language.impl.deferring.DeferringImpl;
 import net.inform7j.transpiler.tokenizer.Result;
 import net.inform7j.transpiler.tokenizer.TokenPattern;
 import net.inform7j.transpiler.tokenizer.TokenString;

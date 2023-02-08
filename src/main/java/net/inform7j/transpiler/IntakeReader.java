@@ -2,11 +2,11 @@ package net.inform7j.transpiler;
 
 import lombok.extern.slf4j.Slf4j;
 import net.inform7j.transpiler.language.IStatement;
+import net.inform7j.transpiler.language.impl.deferring.DeferringStory;
 import net.inform7j.transpiler.parser.CombinedParser;
 import net.inform7j.transpiler.tokenizer.*;
 import net.inform7j.transpiler.tokenizer.pattern.Single;
 import net.inform7j.transpiler.util.StatementSupplier;
-import net.inform7j.transpiler.language.impl.deferring.DeferringStory;
 import net.inform7j.transpiler.language.impl.deferring.RawBlockStatement;
 import net.inform7j.transpiler.language.impl.deferring.RawLineStatement;
 
@@ -21,7 +21,7 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import static net.inform7j.transpiler.language.impl.deferring.DeferringImpl.*;
+import static net.inform7j.transpiler.parser.Patterns.*;
 
 @Slf4j
 public record IntakeReader(

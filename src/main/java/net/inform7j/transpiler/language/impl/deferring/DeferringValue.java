@@ -35,21 +35,21 @@ public class DeferringValue extends DeferringImpl implements IValue {
         Single.STRING.capture(CAPTURE_VALUE)
             .concat(ENDMARKER)
         /*Pattern.compile("^(?<value>\"[^\"]++\")(?>\\s*+(?>\\.|;))?")*/,
-        DeferringValue::Desc
+        DeferringValue::descriptionValue
     ), new Parser<>(
         RULE_START.lookahead(true)
             .concat(TokenPattern.quoteIgnoreCase("the").omittable())
             .concat(OBJ.capture(CAPTURE_OBJECT, DeferringStory.PROPERTY_NAME_REPLACEMENT_OBJECT_CAPTURE))
             .concat(TokenPattern.quoteIgnoreCase("is not").orIgnoreCase("isn't")).concat(PROP.capture(CAPTURE_NAME))
             .concat(ENDMARKER),
-        DeferringValue::FalseProp
+        DeferringValue::falsePropertyValue
     ), new Parser<>(
         RULE_START.lookahead(true)
             .concat(TokenPattern.quoteIgnoreCase("the").omittable())
             .concat(OBJ.capture(CAPTURE_OBJECT, DeferringStory.PROPERTY_NAME_REPLACEMENT_OBJECT_CAPTURE))
             .concatIgnoreCase("is").concat(PROP.capture(CAPTURE_NAME))
             .concat(ENDMARKER),
-        DeferringValue::TrueProp
+        DeferringValue::truePropertyValue
     ), new Parser<>(
         RULE_START.lookahead(true)
             .concat(TokenPattern.quoteIgnoreCase("the").omittable())
@@ -76,40 +76,40 @@ public class DeferringValue extends DeferringImpl implements IValue {
         DeferringValue::new
     ));
     
-    public final LazyLookup<TokenString, DeferringObject> OWNER;
-    public final TokenString VALUE;
-    public final Optional<LazyLookup<TokenString, DeferringProperty>> NAME;
+    public final LazyLookup<TokenString, DeferringObject> owner;
+    public final TokenString value;
+    public final Optional<LazyLookup<TokenString, DeferringProperty>> name;
     
     public DeferringValue(
         DeferringStory story,
         Source source,
-        DeferringObject oWNER,
-        Optional<DeferringProperty> nAME,
-        TokenString vALUE
+        DeferringObject owner,
+        Optional<DeferringProperty> name,
+        TokenString value
     ) {
         super(story, source);
-        NAME = nAME.map(p -> new LazyLookup<>(p.NAME, p));
-        OWNER = new LazyLookup<>(oWNER.NAME, oWNER);
-        VALUE = vALUE;
+        this.name = name.map(p -> new LazyLookup<>(p.name, p));
+        this.owner = new LazyLookup<>(owner.name, owner);
+        this.value = value;
     }
     
     private DeferringValue(ParseContext ctx, TokenString owner, Optional<TokenString> name) {
         super(ctx);
         final Result m = ctx.result();
-        OWNER = new LazyLookup<>(owner, story::getObject);
-        NAME = name.map(n -> new LazyLookup<>(n, p -> story.getProperty(OWNER.get().getType(), p)));
-        VALUE = m.cap(CAPTURE_VALUE);
+        this.owner = new LazyLookup<>(owner, story::getObject);
+        this.name = name.map(n -> new LazyLookup<>(n, p -> story.getProperty(this.owner.get().getType(), p)));
+        this.value = m.cap(CAPTURE_VALUE);
     }
     
     private DeferringValue(ParseContext ctx, TokenString value) {
         super(ctx);
         final Result m = ctx.result();
-        OWNER = new LazyLookup<>(m.cap(CAPTURE_OBJECT), story::getObject);
-        NAME = m.capOpt(CAPTURE_NAME).map(n -> new LazyLookup<>(n, p -> story.getProperty(OWNER.get().getType(), p)));
-        VALUE = value;
+        this.owner = new LazyLookup<>(m.cap(CAPTURE_OBJECT), story::getObject);
+        this.name = m.capOpt(CAPTURE_NAME).map(n -> new LazyLookup<>(n, p -> story.getProperty(owner.get().getType(), p)));
+        this.value = value;
     }
     
-    public static DeferringValue Desc(ParseContext ctx) {
+    public static DeferringValue descriptionValue(ParseContext ctx) {
         return new DeferringValue(
             ctx,
             new TokenString(new Token(Token.Type.WORD, "it")),
@@ -117,39 +117,39 @@ public class DeferringValue extends DeferringImpl implements IValue {
         );
     }
     
-    public static DeferringValue TrueProp(ParseContext ctx) {
+    public static DeferringValue truePropertyValue(ParseContext ctx) {
         return new DeferringValue(ctx, new TokenString(new Token(Token.Type.WORD, "true")));
     }
     
-    public static DeferringValue FalseProp(ParseContext ctx) {
+    public static DeferringValue falsePropertyValue(ParseContext ctx) {
         return new DeferringValue(ctx, new TokenString(new Token(Token.Type.WORD, "false")));
     }
     
     public DeferringValue(ParseContext ctx) {
         super(ctx);
         final Result m = ctx.result();
-        OWNER = new LazyLookup<>(m.cap(CAPTURE_OBJECT), story::getObject);
-        NAME = m.capOpt(CAPTURE_NAME).map(n -> new LazyLookup<>(n, p -> story.getProperty(OWNER.get().getType(), p)));
-        VALUE = m.cap(CAPTURE_VALUE);
+        this.owner = new LazyLookup<>(m.cap(CAPTURE_OBJECT), story::getObject);
+        this.name = m.capOpt(CAPTURE_NAME).map(n -> new LazyLookup<>(n, p -> story.getProperty(owner.get().getType(), p)));
+        this.value = m.cap(CAPTURE_VALUE);
     }
     
     @Override
     public DeferringObject holder() {
-        return OWNER.get();
+        return owner.get();
     }
     
     @Override
     public Optional<? extends DeferringProperty> property() {
-        return NAME.map(LazyLookup::get);
+        return name.map(LazyLookup::get);
     }
     
     @Override
     public TokenString value() {
-        return VALUE;
+        return value;
     }
     
     @Override
     public String toString() {
-        return String.format("%s of %s is %s", NAME.map(LazyLookup::key).orElse(TokenString.EMPTY), OWNER.key(), VALUE);
+        return String.format("%s is %s", name.map(LazyLookup::key).map(s -> s+" of ").orElse("")+ owner.key(), value);
     }
 }
