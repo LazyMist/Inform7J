@@ -17,7 +17,7 @@ public class PropertyParserProvider implements CombinedParser.Provider {
     private static final String CAPTURE_OWNER = "owner";
     private static final String CAPTURE_TYPE = "type";
     private static final String CAPTURE_NAME = "name";
-    private static final List<CombinedParser> PARSERS = Stream.of(new DeferringImpl.Parser<>(
+    private static final List<? extends CombinedParser> PARSERS = Stream.of(new DeferringImpl.Parser<>(
         AN.omittable().concat(new Replacement(DeferringStory.KIND_NAME_REPLACEMENT, false).capture(CAPTURE_OWNER))
             .concat(HAS).concat(SOME)
             .concat(new Replacement(DeferringStory.KIND_NAME_REPLACEMENT, false).capture(CAPTURE_TYPE))

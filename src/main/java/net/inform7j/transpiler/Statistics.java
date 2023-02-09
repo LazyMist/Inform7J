@@ -19,7 +19,7 @@ public enum Statistics {
     WARNINGS(Logger::atWarn),
     INCOMPLETE_EOF_LINE(WARNINGS),
     INCOMPLETE_LINES(WARNINGS),
-    ELEMENTS(Logger::atTrace),
+    ELEMENTS(Logger::atDebug),
     KINDS(ELEMENTS),
     OBJECTS(ELEMENTS),
     PROPERTIES(ELEMENTS),

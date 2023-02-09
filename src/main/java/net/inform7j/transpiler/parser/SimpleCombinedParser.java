@@ -40,7 +40,7 @@ public record SimpleCombinedParser<T extends DeferringImpl>(
         return src.substring(results.get().matchLength());
     }
     
-    public static <T extends DeferringImpl> Function<DeferringImpl.Parser<? extends T>, CombinedParser> bind(
+    public static <T extends DeferringImpl> Function<DeferringImpl.Parser<? extends T>, SimpleCombinedParser<? extends T>> bind(
         int order,
         BiFunction<? super DeferringStory, ? super TokenPattern, ? extends TokenPattern> map,
         BiConsumer<? super DeferringStory, T> con

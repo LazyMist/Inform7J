@@ -18,7 +18,7 @@ public class ObjectParserProvider implements CombinedParser.Provider {
     private static final String CAPTURE_NAME = "name";
     private static final String CAPTURE_TYPE = "type";
     private static final String CAPTURE_OWNER = "owner";
-    private static final List<CombinedParser> PARSERS = Stream.of(new DeferringImpl.Parser<>(
+    private static final List<? extends CombinedParser> PARSERS = Stream.of(new DeferringImpl.Parser<>(
             TokenPattern.quoteIgnoreCase("the").omittable()
                 .concat(IDENTIFIER_LOOP.capture(CAPTURE_NAME))
                 .concat(IS).concat(AN)

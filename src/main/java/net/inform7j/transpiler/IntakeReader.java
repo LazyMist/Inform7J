@@ -94,7 +94,7 @@ public record IntakeReader(
                         s.toString("")
                     );
                     Statistics.UNPROCESSED_BLOCK.prepareLog(log).log(msg);
-                    throw new UnknownLineException(msg);
+                    throw new UnknownLineException(msg, null);
                 }
                 prog.setProgress(iter.nextIndex());
                 prog.setNote(iter.nextIndex() + "/" + cnt.size());
@@ -219,7 +219,7 @@ public record IntakeReader(
             while(true) {
                 Optional<? extends IStatement> opt = sup.getNextOptional(IStatement.class);
                 if(opt.isEmpty()) {
-                    throw new UnknownLineException("Unresolvable Raw include statement: " + line.src() + "@" + line.line());
+                    throw new UnknownLineException("Unresolvable Raw include statement: " + line.src() + "@" + line.line(), lstr);
                 }
                 if(tailMatch(opt.get(), INCLUDE_RAW_END, true)) return true;
             }
@@ -261,11 +261,16 @@ public record IntakeReader(
                         .log();
                 } catch(NoSuchElementException exc) {
                     Statistics.MISSING_FILES.prepareLog(log).log("Cannot locate {} by {} in the extensions.", ex, auth);
+                } catch(UnknownLineException exc) {
+                    if(stopOnError) throw exc;
+                    Statistics.INCOMPLETE_INCLUDE.prepareLog(log)
+                        .setCause(exc)
+                        .log("{}", exc.line);
                 } catch(RuntimeException exc) {
                     if(stopOnError) throw exc;
                     Statistics.INCOMPLETE_INCLUDE.prepareLog(log)
                         .setCause(exc)
-                        .log();
+                        .log(exc.getMessage());
                 }
             }
             return true;
@@ -407,7 +412,7 @@ public record IntakeReader(
                 line.src(),
                 lstr
             );
-            throw new UnknownLineException("Unknown line " + line.line() + " in " + line.src() + ": " + lstr);
+            throw new UnknownLineException("Unknown line " + line.line() + " in " + line.src() + ": " + lstr, lstr);
         }
         return true;
     }

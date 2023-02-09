@@ -12,5 +12,10 @@ module inform7J {
         EnumParserProvider,
         PropertyParserProvider,
         ObjectParserProvider,
+        PredicateParserProvider,
+        FunctionParserProvider,
+        PrintParserProvider,
+        RoutineParserProvider,
+        ActionParserProvider,
         LegacyParserProvider;
 }

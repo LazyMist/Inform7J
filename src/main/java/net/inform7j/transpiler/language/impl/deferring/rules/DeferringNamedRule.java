@@ -1,13 +1,13 @@
 package net.inform7j.transpiler.language.impl.deferring.rules;
 
-import java.util.Optional;
-
 import net.inform7j.transpiler.Source;
 import net.inform7j.transpiler.language.IStatement;
-import net.inform7j.transpiler.language.impl.deferring.DeferringFunction;
 import net.inform7j.transpiler.language.impl.deferring.DeferringStory;
+import net.inform7j.transpiler.parser.FunctionParserProvider;
 import net.inform7j.transpiler.tokenizer.TokenPattern;
 import net.inform7j.transpiler.tokenizer.TokenString;
+
+import java.util.Optional;
 
 public final class DeferringNamedRule extends DeferringRule {
     public static final Parser<DeferringNamedRule> PARSER = new Parser<>(
@@ -24,6 +24,6 @@ public final class DeferringNamedRule extends DeferringRule {
     }
     
     public DeferringNamedRule(ParseContext ctx) {
-        super(ctx, DeferringFunction.getNextBody(ctx.supplier()));
+        super(ctx, FunctionParserProvider.getNextBody(ctx.supplier()));
     }
 }

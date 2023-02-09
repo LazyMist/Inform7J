@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.inform7j.transpiler.Intake;
 import net.inform7j.transpiler.IntakeReader;
 import net.inform7j.transpiler.Statistics;
+import net.inform7j.transpiler.UnknownLineException;
 import org.slf4j.Logger;
 
 import javax.swing.*;
@@ -101,10 +102,14 @@ public class Main {
             rdr.trg().streamObjects().forEachOrdered(Main::logInfoObject);
             log.info("Values:");
             rdr.trg().streamValues().forEachOrdered(Main::logInfoObject);
-        } catch(RuntimeException ex) {
+        } catch(UnknownLineException ex) {
             Statistics.ERROR_EXCEPTIONS.prepareLog(log)
                 .setCause(ex)
-                .log();
+                .log("{}", ex.line);
+        }catch(RuntimeException ex) {
+            Statistics.ERROR_EXCEPTIONS.prepareLog(log)
+                .setCause(ex)
+                .log(ex.getMessage());
         } finally {
             Statistics.printStats(Logger::atInfo);
         }

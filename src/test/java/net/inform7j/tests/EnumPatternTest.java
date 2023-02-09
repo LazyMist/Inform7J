@@ -1,13 +1,15 @@
 package net.inform7j.tests;
 
-import net.inform7j.transpiler.language.impl.deferring.DeferringEnum;
+import net.inform7j.transpiler.parser.CombinedParser;
+import net.inform7j.transpiler.parser.EnumParserProvider;
+import net.inform7j.transpiler.tokenizer.Result;
 import net.inform7j.transpiler.tokenizer.Token;
 import net.inform7j.transpiler.tokenizer.TokenPattern;
-import net.inform7j.transpiler.tokenizer.Result;
 import net.inform7j.transpiler.tokenizer.TokenString;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
+import java.util.ServiceLoader;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -17,7 +19,18 @@ class EnumPatternTest {
     
     @Test
     void test() {
-        TokenPattern pat = DeferringEnum.PARSERS.get(1).pattern();
+        TokenPattern pat = ServiceLoader.load(CombinedParser.Provider.class)
+            .stream()
+            .map(ServiceLoader.Provider::get)
+            .filter(EnumParserProvider.class::isInstance)
+            .map(EnumParserProvider.class::cast)
+            .findFirst()
+            .orElseThrow()
+            .get()
+            .skip(1)
+            .findFirst()
+            .orElseThrow()
+            .pattern();
         TokenString src1 = new TokenString(Token.Generator.parseLiteral(TEST1)), src2 = new TokenString(Token.Generator.parseLiteral(
             TEST2));
         Optional<Result> r = pat.matches(src1).findFirst();

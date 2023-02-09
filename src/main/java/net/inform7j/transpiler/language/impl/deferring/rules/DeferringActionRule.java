@@ -1,24 +1,24 @@
 package net.inform7j.transpiler.language.impl.deferring.rules;
 
+import net.inform7j.transpiler.Source;
+import net.inform7j.transpiler.language.IStatement;
+import net.inform7j.transpiler.language.impl.deferring.DeferringAction;
+import net.inform7j.transpiler.language.impl.deferring.DeferringStory;
+import net.inform7j.transpiler.language.rules.IActionRule;
+import net.inform7j.transpiler.parser.FunctionParserProvider;
+import net.inform7j.transpiler.tokenizer.TokenPattern;
+import net.inform7j.transpiler.tokenizer.TokenString;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
-import net.inform7j.transpiler.Source;
-import net.inform7j.transpiler.language.IStatement;
-import net.inform7j.transpiler.language.impl.deferring.DeferringAction;
-import net.inform7j.transpiler.language.impl.deferring.DeferringFunction;
-import net.inform7j.transpiler.language.impl.deferring.DeferringStory;
-import net.inform7j.transpiler.language.rules.IActionRule;
-import net.inform7j.transpiler.tokenizer.TokenPattern;
-import net.inform7j.transpiler.tokenizer.TokenString;
-
 public sealed class DeferringActionRule extends DeferringRule implements IActionRule
     permits DeferringConditionedActionRule {
     public static Function<? super ParseContext, ? extends DeferringActionRule> factoryWithTrigger(ActionTrigger trigger) {
-        return ctx -> new DeferringActionRule(ctx, DeferringFunction.getNextBody(ctx.supplier()), trigger);
+        return ctx -> new DeferringActionRule(ctx, FunctionParserProvider.getNextBody(ctx.supplier()), trigger);
     }
     public static final String CAPTURE_ACTION = "action";
     public static final String CAPTURE_TARGET = "vname";

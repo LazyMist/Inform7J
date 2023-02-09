@@ -430,8 +430,8 @@ public class DeferringStory implements IStory {
     }
     
     public boolean addAction(DeferringAction act) {
-        Statistics.ACTIONS.prepareLog(log).log("Adding action {}", act.NAME);
-        return actions.putIfAbsent(act.NAME, act) != null;
+        Statistics.ACTIONS.prepareLog(log).log("Adding action {}", act.name);
+        return actions.putIfAbsent(act.name, act) != null;
     }
     
     @Override
@@ -537,7 +537,7 @@ public class DeferringStory implements IStory {
             pchange = true;
         }
         if(def instanceof DeferringSimpleRule smp) {
-            change = simpleRules.computeIfAbsent(smp.TRIGGER, s -> new LinkedList<>()).add(smp);
+            change = simpleRules.computeIfAbsent(smp.trigger, s -> new LinkedList<>()).add(smp);
             pchange = true;
         }
         Optional<TokenString> n = def.name();

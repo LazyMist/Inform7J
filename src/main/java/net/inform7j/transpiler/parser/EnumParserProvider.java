@@ -15,7 +15,7 @@ import static net.inform7j.transpiler.parser.Patterns.*;
 public class EnumParserProvider implements CombinedParser.Provider {
     private static final String CAPTURE_NAME = "name";
     private static final String CAPTURE_VALUES = "values";
-    private static final List<CombinedParser> PARSERS = Stream.of(new DeferringImpl.Parser<>(
+    private static final List<SimpleCombinedParser<? extends DeferringEnum>> PARSERS = Stream.of(new DeferringImpl.Parser<>(
         TokenPattern.quoteIgnoreCase("the")
             .concat(WORD_LOOP.concat(PLURAL_WORD).capture(CAPTURE_NAME))
             .concatIgnoreCase("are")
@@ -73,7 +73,7 @@ public class EnumParserProvider implements CombinedParser.Provider {
         DeferringStory::addEnum
     )).toList();
     @Override
-    public Stream<? extends CombinedParser> get() {
+    public Stream<? extends SimpleCombinedParser<? extends DeferringEnum>> get() {
         return PARSERS.stream()
             ;
     }

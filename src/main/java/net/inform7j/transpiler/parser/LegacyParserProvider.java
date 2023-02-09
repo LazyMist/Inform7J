@@ -5,62 +5,66 @@ import net.inform7j.transpiler.language.impl.deferring.rules.*;
 import net.inform7j.transpiler.language.impl.deferring.rules.DeferringNamedRule;
 import net.inform7j.transpiler.language.impl.deferring.rules.DeferringSimpleRule;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 public class LegacyParserProvider implements CombinedParser.Provider {
-    public static final Collection<? extends CombinedParser> CPARSERS;
-    static {
-        List<CombinedParser> l = new LinkedList<>();
-        DeferringPredicate.PARSERS.stream().map(SimpleCombinedParser.bind(
-            4,
-            DeferringStory::replace,
-            DeferringStory::addPredicate
-        )).forEachOrdered(l::add);
-        DeferringFunction.PARSERS.stream().map(SimpleCombinedParser.bind(
-            5,
-            DeferringStory::replace,
-            DeferringStory::addFunction
-        )).forEachOrdered(l::add);
-        DeferringPrint.PARSERS.stream()
-            .map(SimpleCombinedParser.bind(6, DeferringStory::replace, DeferringStory::addPrint))
-            .forEachOrdered(l::add);
-        DeferringRoutine.PARSERS.stream()
-            .map(SimpleCombinedParser.bind(7, DeferringStory::replace, DeferringStory::addRoutine))
-            .forEachOrdered(l::add);
-        l.add(new SimpleCombinedParser<>(8, DeferringAction.PARSER, DeferringStory::replace, DeferringStory::addAction));
-        l.add(new SimpleCombinedParser<>(
-            9,
-            DeferringTable.DeferringContinuation.PARSER,
-            DeferringStory::replace,
-            DeferringStory::addContinuation
-        ));
-        l.add(new SimpleCombinedParser<>(10, DeferringTable.PARSER, DeferringStory::replace, DeferringStory::addTable));
-        l.add(new SimpleCombinedParser<>(11, DeferringAlias.PARSER, DeferringStory::replace, DeferringStory::addAlias));
-        DeferringConditionedActionRule.PARSERS.stream().map(SimpleCombinedParser.bind(
-            12,
-            DeferringStory::replace,
-            DeferringStory::addRule
-        )).forEachOrdered(l::add);
-        l.add(new SimpleCombinedParser<>(13, DeferringNamedRule.PARSER, DeferringStory::replace, DeferringStory::addRule));
-        DeferringActionRule.PARSERS.stream()
-            .map(SimpleCombinedParser.bind(14, DeferringStory::replace, DeferringStory::addRule))
-            .forEachOrdered(l::add);
-        DeferringSimpleRule.PARSERS.stream()
-            .map(SimpleCombinedParser.bind(15, DeferringStory::replace, DeferringStory::addRule))
-            .forEachOrdered(l::add);
-        DeferringDefault.PARSERS.stream()
-            .map(SimpleCombinedParser.bind(16, DeferringStory::replace, DeferringStory::addDefault))
-            .forEachOrdered(l::add);
-        DeferringValue.PARSERS.stream()
-            .map(SimpleCombinedParser.bind(17, DeferringStory::replace, DeferringStory::addValue))
-            .forEachOrdered(l::add);
-        
-        CPARSERS = Collections.unmodifiableCollection(l);
-    }
+    private static final List<? extends CombinedParser> CPARSERS = Stream.<Stream<CombinedParser>>of(
+            Stream.of(
+                new SimpleCombinedParser<>(
+                    9,
+                    DeferringTable.DeferringContinuation.PARSER,
+                    DeferringStory::replace,
+                    DeferringStory::addContinuation
+                ),
+                new SimpleCombinedParser<>(
+                    10,
+                    DeferringTable.PARSER,
+                    DeferringStory::replace,
+                    DeferringStory::addTable
+                ),
+                new SimpleCombinedParser<>(
+                    11,
+                    DeferringAlias.PARSER,
+                    DeferringStory::replace,
+                    DeferringStory::addAlias
+                )
+            ),
+            DeferringConditionedActionRule.PARSERS.stream().map(SimpleCombinedParser.bind(
+                12,
+                DeferringStory::replace,
+                DeferringStory::addRule
+            )),
+            Stream.of(new SimpleCombinedParser<>(
+                13,
+                DeferringNamedRule.PARSER,
+                DeferringStory::replace,
+                DeferringStory::addRule
+            )),
+            DeferringActionRule.PARSERS.stream().map(SimpleCombinedParser.bind(
+                14,
+                DeferringStory::replace,
+                DeferringStory::addRule
+            )),
+            DeferringSimpleRule.PARSERS.stream().map(SimpleCombinedParser.bind(
+                15,
+                DeferringStory::replace,
+                DeferringStory::addRule
+            )),
+            DeferringDefault.PARSERS.stream().map(SimpleCombinedParser.bind(
+                16,
+                DeferringStory::replace,
+                DeferringStory::addDefault
+            )),
+            DeferringValue.PARSERS.stream().map(SimpleCombinedParser.bind(
+                17,
+                DeferringStory::replace,
+                DeferringStory::addValue
+            ))
+        )
+        .flatMap(Function.identity())
+        .toList();
     @Override
     public Stream<? extends CombinedParser> get() {
         return CPARSERS.stream();
