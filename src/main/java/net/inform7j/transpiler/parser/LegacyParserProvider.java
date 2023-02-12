@@ -13,18 +13,6 @@ public class LegacyParserProvider implements CombinedParser.Provider {
     private static final List<? extends CombinedParser> CPARSERS = Stream.<Stream<CombinedParser>>of(
             Stream.of(
                 new SimpleCombinedParser<>(
-                    9,
-                    DeferringTable.DeferringContinuation.PARSER,
-                    DeferringStory::replace,
-                    DeferringStory::addContinuation
-                ),
-                new SimpleCombinedParser<>(
-                    10,
-                    DeferringTable.PARSER,
-                    DeferringStory::replace,
-                    DeferringStory::addTable
-                ),
-                new SimpleCombinedParser<>(
                     11,
                     DeferringAlias.PARSER,
                     DeferringStory::replace,

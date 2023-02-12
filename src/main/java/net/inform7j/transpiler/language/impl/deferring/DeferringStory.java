@@ -445,15 +445,15 @@ public class DeferringStory implements IStory {
     }
     
     public boolean addTable(DeferringTable t) {
-        if(t.NAME.isEmpty() && t.NUMBER.isEmpty()) throw new IllegalArgumentException("Nameless and numberless Table");
+        if(t.name.isEmpty() && t.number.isEmpty()) throw new IllegalArgumentException("Nameless and numberless Table");
         Statistics.TABLES.prepareLog(log).log(
             "Adding table {} - {}",
-            t.NUMBER.map(TokenString::toString).orElse("N/A"),
-            t.NAME.map(TokenString::toString).orElse("N/A")
+            t.number.map(TokenString::toString).orElse("N/A"),
+            t.name.map(TokenString::toString).orElse("N/A")
         );
         boolean error = false;
-        if(t.NAME.isPresent()) error = tableNames.putIfAbsent(t.NAME.get(), t) != null;
-        if(t.NUMBER.isPresent()) error = error || tableNumbers.putIfAbsent(t.NUMBER.get(), t) != null;
+        if(t.name.isPresent()) error = tableNames.putIfAbsent(t.name.get(), t) != null;
+        if(t.number.isPresent()) error = error || tableNumbers.putIfAbsent(t.number.get(), t) != null;
         return error;
     }
     
@@ -476,8 +476,8 @@ public class DeferringStory implements IStory {
     }
     
     public boolean addContinuation(DeferringContinuation con) {
-        Statistics.CONTINUED_TABLES.prepareLog(log).log("Continuing table {}", con.TABLE_NAME);
-        return (con.NUMBER ? continuedNumbers : continuedNames).computeIfAbsent(con.TABLE_NAME, s -> new LinkedList<>())
+        Statistics.CONTINUED_TABLES.prepareLog(log).log("Continuing table {}", con.tableName);
+        return (con.number ? continuedNumbers : continuedNames).computeIfAbsent(con.tableName, s -> new LinkedList<>())
             .add(con);
     }
     
