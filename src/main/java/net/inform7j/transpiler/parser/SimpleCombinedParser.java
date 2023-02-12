@@ -1,5 +1,6 @@
 package net.inform7j.transpiler.parser;
 
+import lombok.extern.slf4j.Slf4j;
 import net.inform7j.transpiler.language.IStatement;
 import net.inform7j.transpiler.language.impl.deferring.DeferringStory;
 import net.inform7j.transpiler.language.impl.deferring.DeferringImpl;
@@ -13,6 +14,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+@Slf4j
 public record SimpleCombinedParser<T extends DeferringImpl>(
     int order,
     TokenPattern pattern,
@@ -29,10 +31,10 @@ public record SimpleCombinedParser<T extends DeferringImpl>(
         this(order, parser.pattern(), patMap, parser.factory(), consumer);
     }
     public TokenString cparse(DeferringStory story, IStatement source, StatementSupplier sup, TokenString src) {
-        //Logging.log(Severity.DEBUG, "Parsing %s\nwith %s", src, parser.pattern().pattern());
+        log.trace("Parsing {}\nwith {}", src, pattern);
         Optional<Result> results = patMap.apply(story, pattern).matches(src).findFirst();
         if(results.isEmpty()) return src;
-        //Logging.log(Severity.DEBUG, "Parsing successful");
+        log.trace("Parsing successful");
         consumer.accept(
             story,
             factory.apply(new DeferringImpl.ParseContext(story, source, results.get(), sup))
