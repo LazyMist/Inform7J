@@ -493,8 +493,8 @@ public class DeferringStory implements IStory {
     }
     
     public boolean addAlias(DeferringAlias a) {
-        for(TokenString alias : a.ALIASES) {
-            Statistics.ALIASES.prepareLog(log).log("Adding alias {} for {}", alias, a.ORIGINAL);
+        for(TokenString alias : a.aliases) {
+            Statistics.ALIASES.prepareLog(log).log("Adding alias {} for {}", alias, a.original);
         }
         return aliases.add(a);
     }

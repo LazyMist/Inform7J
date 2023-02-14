@@ -18,5 +18,6 @@ module inform7J {
         RoutineParserProvider,
         ActionParserProvider,
         TableParserProvider,
+        AliasParserProvider,
         LegacyParserProvider;
 }

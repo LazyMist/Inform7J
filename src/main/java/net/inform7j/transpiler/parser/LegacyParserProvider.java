@@ -11,14 +11,6 @@ import java.util.stream.Stream;
 
 public class LegacyParserProvider implements CombinedParser.Provider {
     private static final List<? extends CombinedParser> CPARSERS = Stream.<Stream<CombinedParser>>of(
-            Stream.of(
-                new SimpleCombinedParser<>(
-                    11,
-                    DeferringAlias.PARSER,
-                    DeferringStory::replace,
-                    DeferringStory::addAlias
-                )
-            ),
             DeferringConditionedActionRule.PARSERS.stream().map(SimpleCombinedParser.bind(
                 12,
                 DeferringStory::replace,
