@@ -1,5 +1,6 @@
 import net.inform7j.transpiler.parser.CombinedParser;
 import net.inform7j.transpiler.parser.provider.*;
+import net.inform7j.transpiler.parser.provider.rule.*;
 
 module inform7J {
     requires java.desktop;
@@ -20,5 +21,6 @@ module inform7J {
         ActionParserProvider,
         TableParserProvider,
         AliasParserProvider,
+        ConditionalActionRuleProvider,
         LegacyParserProvider;
 }
