@@ -1,7 +1,7 @@
 package net.inform7j.tests;
 
 import net.inform7j.transpiler.parser.CombinedParser;
-import net.inform7j.transpiler.parser.EnumParserProvider;
+import net.inform7j.transpiler.parser.provider.EnumParserProvider;
 import net.inform7j.transpiler.tokenizer.Result;
 import net.inform7j.transpiler.tokenizer.Token;
 import net.inform7j.transpiler.tokenizer.TokenPattern;

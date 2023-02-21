@@ -1,8 +1,10 @@
-package net.inform7j.transpiler.parser;
+package net.inform7j.transpiler.parser.provider;
 
 import net.inform7j.transpiler.language.impl.deferring.DeferringImpl;
 import net.inform7j.transpiler.language.impl.deferring.DeferringRoutine;
 import net.inform7j.transpiler.language.impl.deferring.DeferringStory;
+import net.inform7j.transpiler.parser.CombinedParser;
+import net.inform7j.transpiler.parser.SimpleCombinedParser;
 import net.inform7j.transpiler.tokenizer.TokenPattern;
 import net.inform7j.transpiler.tokenizer.TokenPredicate;
 import net.inform7j.transpiler.tokenizer.pattern.Single;
@@ -12,7 +14,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static net.inform7j.transpiler.parser.FunctionParserProvider.*;
+import static net.inform7j.transpiler.parser.provider.FunctionParserProvider.*;
 import static net.inform7j.transpiler.parser.Patterns.*;
 
 public class RoutineParserProvider implements CombinedParser.Provider {

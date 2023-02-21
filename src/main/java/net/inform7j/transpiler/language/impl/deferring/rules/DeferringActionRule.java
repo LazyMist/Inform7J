@@ -5,7 +5,7 @@ import net.inform7j.transpiler.language.IStatement;
 import net.inform7j.transpiler.language.impl.deferring.DeferringAction;
 import net.inform7j.transpiler.language.impl.deferring.DeferringStory;
 import net.inform7j.transpiler.language.rules.IActionRule;
-import net.inform7j.transpiler.parser.FunctionParserProvider;
+import net.inform7j.transpiler.parser.provider.FunctionParserProvider;
 import net.inform7j.transpiler.tokenizer.TokenPattern;
 import net.inform7j.transpiler.tokenizer.TokenString;
 

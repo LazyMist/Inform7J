@@ -1,9 +1,11 @@
-package net.inform7j.transpiler.parser;
+package net.inform7j.transpiler.parser.provider;
 
 import net.inform7j.transpiler.language.IEnum;
 import net.inform7j.transpiler.language.impl.deferring.DeferringEnum;
 import net.inform7j.transpiler.language.impl.deferring.DeferringImpl;
 import net.inform7j.transpiler.language.impl.deferring.DeferringStory;
+import net.inform7j.transpiler.parser.CombinedParser;
+import net.inform7j.transpiler.parser.SimpleCombinedParser;
 import net.inform7j.transpiler.tokenizer.Replacement;
 import net.inform7j.transpiler.tokenizer.TokenPattern;
 

@@ -1,7 +1,9 @@
-package net.inform7j.transpiler.parser;
+package net.inform7j.transpiler.parser.provider;
 
 import net.inform7j.transpiler.language.impl.deferring.DeferringKind;
 import net.inform7j.transpiler.language.impl.deferring.DeferringStory;
+import net.inform7j.transpiler.parser.CombinedParser;
+import net.inform7j.transpiler.parser.SimpleCombinedParser;
 import net.inform7j.transpiler.tokenizer.Replacement;
 
 import java.util.stream.Stream;

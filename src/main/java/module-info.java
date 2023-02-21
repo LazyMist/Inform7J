@@ -1,4 +1,5 @@
-import net.inform7j.transpiler.parser.*;
+import net.inform7j.transpiler.parser.CombinedParser;
+import net.inform7j.transpiler.parser.provider.*;
 
 module inform7J {
     requires java.desktop;

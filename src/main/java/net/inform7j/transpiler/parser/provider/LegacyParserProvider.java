@@ -1,9 +1,11 @@
-package net.inform7j.transpiler.parser;
+package net.inform7j.transpiler.parser.provider;
 
 import net.inform7j.transpiler.language.impl.deferring.*;
 import net.inform7j.transpiler.language.impl.deferring.rules.*;
 import net.inform7j.transpiler.language.impl.deferring.rules.DeferringNamedRule;
 import net.inform7j.transpiler.language.impl.deferring.rules.DeferringSimpleRule;
+import net.inform7j.transpiler.parser.CombinedParser;
+import net.inform7j.transpiler.parser.SimpleCombinedParser;
 
 import java.util.List;
 import java.util.function.Function;

@@ -1,4 +1,4 @@
-package net.inform7j.transpiler.parser;
+package net.inform7j.transpiler.parser.provider;
 
 import lombok.extern.slf4j.Slf4j;
 import net.inform7j.transpiler.IntakeReader;
@@ -8,6 +8,8 @@ import net.inform7j.transpiler.language.impl.deferring.DeferringFunction;
 import net.inform7j.transpiler.language.impl.deferring.DeferringImpl;
 import net.inform7j.transpiler.language.impl.deferring.DeferringStory;
 import net.inform7j.transpiler.language.impl.deferring.RawLineStatement;
+import net.inform7j.transpiler.parser.CombinedParser;
+import net.inform7j.transpiler.parser.SimpleCombinedParser;
 import net.inform7j.transpiler.tokenizer.*;
 import net.inform7j.transpiler.tokenizer.pattern.End;
 import net.inform7j.transpiler.tokenizer.pattern.Single;

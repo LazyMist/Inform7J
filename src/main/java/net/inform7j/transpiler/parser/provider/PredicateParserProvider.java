@@ -1,6 +1,8 @@
-package net.inform7j.transpiler.parser;
+package net.inform7j.transpiler.parser.provider;
 
 import net.inform7j.transpiler.language.impl.deferring.*;
+import net.inform7j.transpiler.parser.CombinedParser;
+import net.inform7j.transpiler.parser.SimpleCombinedParser;
 import net.inform7j.transpiler.tokenizer.Token;
 import net.inform7j.transpiler.tokenizer.TokenPattern;
 import net.inform7j.transpiler.tokenizer.TokenPredicate;
@@ -11,7 +13,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import static net.inform7j.transpiler.parser.FunctionParserProvider.*;
+import static net.inform7j.transpiler.parser.provider.FunctionParserProvider.*;
 import static net.inform7j.transpiler.parser.Patterns.*;
 
 public class PredicateParserProvider implements CombinedParser.Provider {
